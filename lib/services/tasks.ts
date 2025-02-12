@@ -261,7 +261,7 @@ export async function cancelTask(
 // Base CRUD operations
 export async function getTasks(): Promise<Task[]> {
   try {
-    const response = await api.get('/api/tasks');
+    const response = await api.get('/tasks');
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for tasks');
@@ -271,7 +271,7 @@ export async function getTasks(): Promise<Task[]> {
 
 export async function getTask(id: string): Promise<Task> {
   try {
-    const response = await api.get(`/api/tasks/${id}`);
+    const response = await api.get(`/tasks/${id}`);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for task');
@@ -283,7 +283,7 @@ export async function getTask(id: string): Promise<Task> {
 
 export async function createTask(task: Omit<Task, 'id'>): Promise<Task> {
   try {
-    const response = await api.post('/api/tasks', task);
+    const response = await api.post('/tasks', task);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for create task');
@@ -298,7 +298,7 @@ export async function createTask(task: Omit<Task, 'id'>): Promise<Task> {
 
 export async function updateTask(id: string, task: Partial<Task>): Promise<Task> {
   try {
-    const response = await api.patch(`/api/tasks/${id}`, task);
+    const response = await api.patch(`/tasks/${id}`, task);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for update task');
@@ -313,7 +313,7 @@ export async function updateTask(id: string, task: Partial<Task>): Promise<Task>
 
 export async function deleteTask(id: string): Promise<void> {
   try {
-    await api.delete(`/api/tasks/${id}`);
+    await api.delete(`/tasks/${id}`);
   } catch (error) {
     console.warn('Falling back to mock data for delete task');
     return Promise.resolve();
