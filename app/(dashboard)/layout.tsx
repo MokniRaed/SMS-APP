@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Home, Users, Briefcase, FileText, Settings, LogOut, Database, ShoppingCart } from 'lucide-react';
 import { NotificationCenter } from '@/components/notifications/notification-center';
+import { UserMenu } from '@/components/user-menu';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
@@ -26,6 +27,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -39,20 +41,24 @@ export default function DashboardLayout({
   return (
       <div className="min-h-screen bg-background">
         {/* Mobile navigation */}
-        <Sheet>
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" className="lg:hidden fixed top-4 left-4">
+            <Button variant="ghost" className="lg:hidden fixed top-4 left-4 z-50">
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64">
-            <nav className="flex flex-col gap-4">
+          <SheetContent side="left" className="w-64 p-0">
+            <div className="flex h-16 shrink-0 items-center px-6">
+              <h1 className="text-2xl font-bold">Task Manager</h1>
+            </div>
+            <nav className="flex flex-col gap-1 p-4">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
                     <Link
                         key={item.name}
                         href={item.href}
+                        onClick={() => setIsOpen(false)}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent ${
                             pathname === item.href ? 'bg-accent' : ''
                         }`}
@@ -62,6 +68,12 @@ export default function DashboardLayout({
                     </Link>
                 );
               })}
+              <Button variant="ghost" className="justify-start gap-2 mt-auto" asChild>
+                <Link href="/api/auth/logout">
+                  <LogOut className="h-5 w-5" />
+                  Logout
+                </Link>
+              </Button>
             </nav>
           </SheetContent>
         </Sheet>
@@ -72,7 +84,7 @@ export default function DashboardLayout({
             <div className="flex h-16 shrink-0 items-center">
               <h1 className="text-2xl font-bold">Task Manager</h1>
             </div>
-            <nav className="flex flex-1 flex-col gap-4">
+            <nav className="flex flex-1 flex-col gap-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -101,9 +113,10 @@ export default function DashboardLayout({
         {/* Main content */}
         <div className="lg:pl-64">
           {/* Top bar */}
-          <div className="fixed top-0 right-14 left-0 lg:left-64 h-16 border-b bg-background z-50">
-            <div className="flex items-center justify-end h-full px-4">
+          <div className="fixed top-0 right-0 left-0 lg:left-64 h-16 border-b bg-background z-40">
+            <div className="flex items-center justify-end h-full px-4 space-x-4">
               <NotificationCenter />
+              <UserMenu />
             </div>
           </div>
 

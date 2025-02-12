@@ -1,262 +1,344 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Bell, User, Lock, Shield } from 'lucide-react';
-import { useState } from 'react';
+import { Moon, Sun, Bell, User, Lock, Shield, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-const PasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+// Schema for parameter entries
+const ParameterSchema = z.object({
+    id: z.string().optional(),
+    description: z.string().min(1, 'Description is required'),
 });
 
-type PasswordForm = z.infer<typeof PasswordSchema>;
+type Parameter = z.infer<typeof ParameterSchema>;
+
+type ParameterCategory = 'project' | 'task' | 'client' | 'order';
+type ParameterType = 'type' | 'status' | 'priority' | 'category';
+
+// Define the structure of our parameters state
+type ParametersState = {
+    [K in ParameterCategory]: {
+        [T in ParameterType]?: Parameter[];
+    };
+};
+
+const initialParameters: ParametersState = {
+    project: {
+        type: [
+            { id: '1', description: 'Development' },
+            { id: '2', description: 'Research' },
+            { id: '3', description: 'Maintenance' }
+        ],
+        status: [
+            { id: '1', description: 'Planned' },
+            { id: '2', description: 'In Progress' },
+            { id: '3', description: 'Completed' }
+        ]
+    },
+    task: {
+        type: [
+            { id: '1', description: 'Bug Fix' },
+            { id: '2', description: 'Feature' },
+            { id: '3', description: 'Documentation' }
+        ],
+        priority: [
+            { id: '1', description: 'Low' },
+            { id: '2', description: 'Medium' },
+            { id: '3', description: 'High' }
+        ],
+        status: [
+            { id: '1', description: 'Open' },
+            { id: '2', description: 'In Progress' },
+            { id: '3', description: 'Completed' }
+        ]
+    },
+    client: {
+        category: [
+            { id: '1', description: 'Enterprise' },
+            { id: '2', description: 'SMB' },
+            { id: '3', description: 'Individual' }
+        ],
+        status: [
+            { id: '1', description: 'Active' },
+            { id: '2', description: 'Inactive' },
+            { id: '3', description: 'Pending' }
+        ]
+    },
+    order: {
+        type: [
+            { id: '1', description: 'Standard' },
+            { id: '2', description: 'Express' },
+            { id: '3', description: 'Bulk' }
+        ],
+        status: [
+            { id: '1', description: 'New' },
+            { id: '2', description: 'Processing' },
+            { id: '3', description: 'Shipped' }
+        ]
+    }
+};
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme();
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+    const { theme, setTheme } = useTheme();
+    const [pushNotifications, setPushNotifications] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState<ParameterCategory>('project');
+    const [selectedType, setSelectedType] = useState<ParameterType>('type');
+    const [isParameterDialogOpen, setIsParameterDialogOpen] = useState(false);
+    const [editingParameter, setEditingParameter] = useState<Parameter | null>(null);
+    const [parameters, setParameters] = useState<ParametersState>(initialParameters);
 
-  const {
-    register: passwordRegister,
-    handleSubmit: handlePasswordSubmit,
-    formState: { errors: passwordErrors },
-    reset: resetPasswordForm
-  } = useForm<PasswordForm>({
-    resolver: zodResolver(PasswordSchema)
-  });
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<Parameter>({
+        resolver: zodResolver(ParameterSchema)
+    });
 
-  const handleProfileUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsSubmitting(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Profile updated successfully');
-    } catch (error) {
-      toast.error('Failed to update profile');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    const handleParameterSubmit = async (data: Parameter) => {
+        setIsSubmitting(true);
+        try {
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-  const onPasswordSubmit = async (data: PasswordForm) => {
-    setIsSubmitting(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Password updated successfully');
-      setIsPasswordDialogOpen(false);
-      resetPasswordForm();
-    } catch (error) {
-      toast.error('Failed to update password');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+            if (editingParameter) {
+                // Update existing parameter
+                setParameters(prev => ({
+                    ...prev,
+                    [selectedCategory]: {
+                        ...prev[selectedCategory],
+                        [selectedType]: prev[selectedCategory][selectedType]?.map(p =>
+                            p.id === editingParameter.id ? { ...p, description: data.description } : p
+                        )
+                    }
+                }));
+                toast.success('Parameter updated successfully');
+            } else {
+                // Add new parameter
+                setParameters(prev => ({
+                    ...prev,
+                    [selectedCategory]: {
+                        ...prev[selectedCategory],
+                        [selectedType]: [
+                            ...(prev[selectedCategory][selectedType] || []),
+                            { id: Math.random().toString(), description: data.description }
+                        ]
+                    }
+                }));
+                toast.success('Parameter added successfully');
+            }
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Settings</h1>
+            setIsParameterDialogOpen(false);
+            reset();
+            setEditingParameter(null);
+        } catch (error) {
+            toast.error('Failed to save parameter');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
-      <div className="grid gap-6">
-        {/* Preferences Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Preferences</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                <div>
-                  <p className="font-medium">Theme</p>
-                  <p className="text-sm text-muted-foreground">Switch between light and dark mode</p>
-                </div>
-              </div>
-              <Switch
-                checked={theme === 'dark'}
-                onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-              />
-            </div>
+    const handleDeleteParameter = async (id: string) => {
+        try {
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Bell className="h-5 w-5" />
-                <div>
-                  <p className="font-medium">Push Notifications</p>
-                  <p className="text-sm text-muted-foreground">Receive notifications about updates</p>
-                </div>
-              </div>
-              <Switch
-                checked={pushNotifications}
-                onCheckedChange={setPushNotifications}
-              />
-            </div>
-          </CardContent>
-        </Card>
+            setParameters(prev => ({
+                ...prev,
+                [selectedCategory]: {
+                    ...prev[selectedCategory],
+                    [selectedType]: prev[selectedCategory][selectedType]?.filter(p => p.id !== id)
+                }
+            }));
 
-        {/* Profile Settings Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile Settings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleProfileUpdate} className="space-y-4">
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name</label>
-                  <Input placeholder="John Doe" />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input type="email" placeholder="john@example.com" />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number</label>
-                  <Input type="tel" placeholder="+1 (555) 000-0000" />
-                </div>
-              </div>
+            toast.success('Parameter deleted successfully');
+        } catch (error) {
+            toast.error('Failed to delete parameter');
+        }
+    };
 
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+    const getCategoryTitle = (category: ParameterCategory) => {
+        return category.charAt(0).toUpperCase() + category.slice(1);
+    };
 
-        {/* Security Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Security</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Lock className="h-5 w-5" />
-                <div>
-                  <p className="font-medium">Change Password</p>
-                  <p className="text-sm text-muted-foreground">Update your password</p>
-                </div>
-              </div>
-              <Button variant="outline" onClick={() => setIsPasswordDialogOpen(true)}>
-                Change
-              </Button>
-            </div>
+    const getTypeTitle = (type: ParameterType) => {
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    };
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Shield className="h-5 w-5" />
-                <div>
-                  <p className="font-medium">Two-Factor Authentication</p>
-                  <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
-                </div>
-              </div>
-              <Button variant="outline">Enable</Button>
-            </div>
-          </CardContent>
-        </Card>
+    const getAvailableTypes = (category: ParameterCategory): ParameterType[] => {
+        switch (category) {
+            case 'project':
+                return ['type', 'status'];
+            case 'task':
+                return ['type', 'priority', 'status'];
+            case 'client':
+                return ['category', 'status'];
+            case 'order':
+                return ['type', 'status'];
+            default:
+                return ['type'];
+        }
+    };
 
-        {/* Danger Zone Card */}
-        <Card className="border-red-200">
-          <CardHeader>
-            <CardTitle className="text-red-500">Danger Zone</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button variant="destructive">Delete Account</Button>
-          </CardContent>
-        </Card>
-      </div>
+    const getCurrentParameters = () => {
+        return parameters[selectedCategory][selectedType] || [];
+    };
 
-      {/* Change Password Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
-            <DialogDescription>
-              Enter your current password and choose a new one.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Current Password</label>
-                <Input
-                  type="password"
-                  {...passwordRegister('currentPassword')}
-                  disabled={isSubmitting}
-                />
-                {passwordErrors.currentPassword && (
-                  <p className="text-sm text-red-500">{passwordErrors.currentPassword.message}</p>
-                )}
-              </div>
+    return (
+        <div className="space-y-6">
+            <h1 className="text-3xl font-bold">Settings</h1>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">New Password</label>
-                <Input
-                  type="password"
-                  {...passwordRegister('newPassword')}
-                  disabled={isSubmitting}
-                />
-                {passwordErrors.newPassword && (
-                  <p className="text-sm text-red-500">{passwordErrors.newPassword.message}</p>
-                )}
-              </div>
+            <Tabs defaultValue="project" className="space-y-6">
+                <TabsList>
+                    <TabsTrigger value="project">Project Parameters</TabsTrigger>
+                    <TabsTrigger value="task">Task Parameters</TabsTrigger>
+                    <TabsTrigger value="client">Client Parameters</TabsTrigger>
+                    <TabsTrigger value="order">Order Parameters</TabsTrigger>
+                </TabsList>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Confirm New Password</label>
-                <Input
-                  type="password"
-                  {...passwordRegister('confirmPassword')}
-                  disabled={isSubmitting}
-                />
-                {passwordErrors.confirmPassword && (
-                  <p className="text-sm text-red-500">{passwordErrors.confirmPassword.message}</p>
-                )}
-              </div>
-            </div>
+                {(['project', 'task', 'client', 'order'] as const).map((category) => (
+                    <TabsContent key={category} value={category}>
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle>{getCategoryTitle(category)} Parameters</CardTitle>
+                                    <Button onClick={() => {
+                                        setSelectedCategory(category);
+                                        setEditingParameter(null);
+                                        setIsParameterDialogOpen(true);
+                                    }}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Parameter
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <Tabs
+                                    value={selectedType}
+                                    onValueChange={(value) => setSelectedType(value as ParameterType)}
+                                >
+                                    <TabsList className="mb-4">
+                                        {getAvailableTypes(category).map((type) => (
+                                            <TabsTrigger key={type} value={type}>
+                                                {getTypeTitle(type)}
+                                            </TabsTrigger>
+                                        ))}
+                                    </TabsList>
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsPasswordDialogOpen(false);
-                  resetPasswordForm();
-                }}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Updating...' : 'Update Password'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+                                    <div className="rounded-md border">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Description</TableHead>
+                                                    <TableHead className="w-[100px]">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {getCurrentParameters().map((param) => (
+                                                    <TableRow key={param.id}>
+                                                        <TableCell>{param.description}</TableCell>
+                                                        <TableCell>
+                                                            <div className="flex space-x-2">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => {
+                                                                        setSelectedCategory(category);
+                                                                        setEditingParameter(param);
+                                                                        setIsParameterDialogOpen(true);
+                                                                    }}
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleDeleteParameter(param.id)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </Tabs>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                ))}
+
+
+            </Tabs>
+
+            {/* Parameter Dialog */}
+            <Dialog open={isParameterDialogOpen} onOpenChange={setIsParameterDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingParameter ? 'Edit' : 'Add'} {getCategoryTitle(selectedCategory)} {getTypeTitle(selectedType)}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {editingParameter ? 'Update the' : 'Enter a'} description for this parameter.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit(handleParameterSubmit)} className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Description</label>
+                            <Input
+                                {...register('description')}
+                                defaultValue={editingParameter?.description}
+                                disabled={isSubmitting}
+                            />
+                            {errors.description && (
+                                <p className="text-sm text-destructive">{errors.description.message}</p>
+                            )}
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setIsParameterDialogOpen(false);
+                                    reset();
+                                    setEditingParameter(null);
+                                }}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Saving...' : editingParameter ? 'Update' : 'Add'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
 }

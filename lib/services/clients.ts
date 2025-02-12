@@ -1,11 +1,19 @@
 import { z } from 'zod';
 import api from '@/lib/axios';
 
+// Define the function type
+export const FonctionContactSchema = z.object({
+  _id: z.string(),
+  nom_fonc: z.string(),
+  description_fonc: z.string()
+});
+
+export type FonctionContact = z.infer<typeof FonctionContactSchema>;
+
 export const ClientContactSchema = z.object({
-  id: z.string().min(1, 'Client ID is required'),
   id_client: z.string().min(1, 'Client ID is required'),
   nom_prenom_contact: z.string().min(1, 'Name is required'),
-  fonction_contact: z.string().optional(),
+  fonction_contact: z.string().min(1, 'Function is required'),
   numero_fix: z.string().optional(),
   numero_mobile: z.string().optional(),
   adresse_email: z.string().email().optional(),
@@ -19,36 +27,24 @@ export const ClientContactSchema = z.object({
 
 export type ClientContact = z.infer<typeof ClientContactSchema>;
 
-// Mock data for fallback
-const mockClientContacts: ClientContact[] = [
-  {
-    id: '1',
-    id_client: 'CLI001',
-    nom_prenom_contact: 'John Smith',
-    fonction_contact: 'Manager',
-    numero_fix: '+1 555-0123',
-    numero_mobile: '+1 555-4567',
-    adresse_email: 'john.smith@acme.com',
-    compte_linkedin: 'linkedin.com/in/johnsmith',
-    canal_interet: 'Email'
-  },
-  {
-    id: '2',
-    id_client: 'CLI002',
-    nom_prenom_contact: 'Sarah Johnson',
-    fonction_contact: 'Director',
-    numero_fix: '+1 555-8901',
-    numero_mobile: '+1 555-2345',
-    adresse_email: 'sarah.j@techstart.com',
-    compte_whatsapp: '@sarahj',
-    compte_whatsapp_num: '+1 555-2345',
-    canal_interet: 'WhatsApp'
+// Add function to get all functions
+export async function getFonctions(): Promise<FonctionContact[]> {
+  try {
+    const response = await api.get('/clients/fonction-contacts');
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for functions');
+    return [
+      { _id: '1', nom_fonc: 'Manager', description_fonc: 'Management position' },
+      { _id: '2', nom_fonc: 'Director', description_fonc: 'Director position' },
+      { _id: '3', nom_fonc: 'Supervisor', description_fonc: 'Supervision position' }
+    ];
   }
-];
+}
 
 export async function getClientContacts(): Promise<ClientContact[]> {
   try {
-    const response = await api.get('/api/clients/contacts');
+    const response = await api.get('/clients/contacts');
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for client contacts');
@@ -58,7 +54,7 @@ export async function getClientContacts(): Promise<ClientContact[]> {
 
 export async function getClientContact(id: string): Promise<ClientContact> {
   try {
-    const response = await api.get(`/api/clients/contacts/${id}`);
+    const response = await api.get(`/clients/contacts/${id}`);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for client contact');
@@ -70,7 +66,7 @@ export async function getClientContact(id: string): Promise<ClientContact> {
 
 export async function createClientContact(contact: Omit<ClientContact, 'id'>): Promise<ClientContact> {
   try {
-    const response = await api.post('/api/clients/contacts', contact);
+    const response = await api.post('/clients/contacts', contact);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for create client contact');
@@ -83,7 +79,7 @@ export async function createClientContact(contact: Omit<ClientContact, 'id'>): P
 
 export async function updateClientContact(id: string, contact: Partial<ClientContact>): Promise<ClientContact> {
   try {
-    const response = await api.patch(`/api/clients/contacts/${id}`, contact);
+    const response = await api.patch(`/clients/contacts/${id}`, contact);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for update client contact');
@@ -97,7 +93,7 @@ export async function updateClientContact(id: string, contact: Partial<ClientCon
 
 export async function deleteClientContact(id: string): Promise<void> {
   try {
-    await api.delete(`/api/clients/contacts/${id}`);
+    await api.delete(`/clients/contacts/${id}`);
   } catch (error) {
     console.warn('Falling back to mock data for delete client contact');
     return Promise.resolve();
@@ -108,7 +104,7 @@ export async function uploadContacts(file: File): Promise<void> {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    await api.post('/api/clients/upload-contacts', formData, {
+    await api.post('/clients/upload-contacts', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

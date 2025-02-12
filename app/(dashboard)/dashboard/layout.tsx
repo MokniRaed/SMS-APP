@@ -48,7 +48,7 @@ export default function DashboardLayout({
             })}
           </nav>
         </SheetContent>
-      </Sheet> */}
+      </Sheet>
 
       {/* Desktop navigation */}
       {/* <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">

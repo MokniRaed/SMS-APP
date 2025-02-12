@@ -53,7 +53,7 @@ export default function ClientContactsPage() {
       toast.error('Failed to delete contact');
     }
   });
-
+  console.log("contacts",contacts)
   const renderGridView = () => {
     if (isLoading) {
       return (
@@ -67,13 +67,13 @@ export default function ClientContactsPage() {
 
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {contacts.map((contact) => (
-          <Card key={contact.id}>
+        {contacts.map((contact,index) => (
+          <Card key={index}>
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="font-semibold text-lg">{contact.nom_prenom_contact}</h3>
-                  <p className="text-sm text-muted-foreground">{contact.fonction_contact}</p>
+                  <p className="text-sm text-muted-foreground">{contact?.fonction_contact?.nom_fonc}</p>
                 </div>
               </div>
 
@@ -93,7 +93,7 @@ export default function ClientContactsPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => router.push(`/dashboard/clients/${contact.id}/edit`)}
+                  onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -131,10 +131,10 @@ export default function ClientContactsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {contacts.map((contact) => (
-              <TableRow key={contact.id}>
+            {contacts.map((contact,index) => (
+              <TableRow key={index}>
                 <TableCell className="font-medium">{contact.nom_prenom_contact}</TableCell>
-                <TableCell>{contact.fonction_contact}</TableCell>
+                <TableCell>{contact?.fonction_contact?.nom_fonc}</TableCell>
                 <TableCell>{contact.adresse_email}</TableCell>
                 <TableCell>{contact.numero_mobile || contact.numero_fix}</TableCell>
                 <TableCell>{contact.canal_interet}</TableCell>
@@ -143,14 +143,14 @@ export default function ClientContactsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => router.push(`/dashboard/clients/${contact.id}/edit`)}
+                      onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setDeleteContactId(contact.id)}
+                      onClick={() => setDeleteContactId(contact._id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
