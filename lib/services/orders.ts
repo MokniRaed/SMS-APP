@@ -4,7 +4,7 @@ import api from '@/lib/axios';
 export const OrderLineSchema = z.object({
   id: z.string(),
   articleId: z.string(),
-  quantity: z.number(),
+  quantity: z.number().min(1),
   notes: z.string().optional(),
   status: z.enum(['PENDING', 'VALIDATED', 'CONFIRMED', 'CANCELLED']),
 });
@@ -102,17 +102,62 @@ const mockOrders: Order[] = [
 ];
 
 export async function getOrders(): Promise<Order[]> {
-  // For demo purposes, return mock data
-  return Promise.resolve(mockOrders);
+  try {
+    const response = await api.get('/api/orders');
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for orders');
+    return mockOrders;
+  }
 }
 
 export async function getOrder(id: string): Promise<Order> {
-  const order = mockOrders.find(o => o.id === id);
-  if (!order) throw new Error('Order not found');
-  return Promise.resolve(order);
+  try {
+    const response = await api.get(`/api/orders/${id}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for order');
+    const order = mockOrders.find(o => o.id === id);
+    if (!order) throw new Error('Order not found');
+    return order;
+  }
+}
+
+export async function createOrder(order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Promise<Order> {
+  try {
+    const response = await api.post('/api/orders', order);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for create order');
+    return {
+      ...order,
+      id: Math.random().toString(36).substr(2, 9),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+}
+
+export async function updateOrder(id: string, order: Partial<Order>): Promise<Order> {
+  try {
+    const response = await api.patch(`/api/orders/${id}`, order);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for update order');
+    const existingOrder = await getOrder(id);
+    return {
+      ...existingOrder,
+      ...order,
+      updatedAt: new Date().toISOString()
+    };
+  }
 }
 
 export async function deleteOrder(id: string): Promise<void> {
-  // Simulate API call
-  return Promise.resolve();
+  try {
+    await api.delete(`/api/orders/${id}`);
+  } catch (error) {
+    console.warn('Falling back to mock data for delete order');
+    return Promise.resolve();
+  }
 }

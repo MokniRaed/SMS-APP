@@ -26,7 +26,6 @@ export async function verifyToken(token: string) {
 }
 
 export async function getUser(req?: NextRequest) {
-  console.log("req", req);
 
   const token = req?.cookies.get('token')?.value;
 

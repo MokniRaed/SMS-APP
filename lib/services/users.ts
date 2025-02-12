@@ -1,11 +1,7 @@
+'use client';
+
 import { z } from 'zod';
 import api from '@/lib/axios';
-
-export const RoleSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1, 'Role name is required'),
-  permissions: z.array(z.string())
-});
 
 export const UserSchema = z.object({
   id: z.string().optional(),
@@ -19,73 +15,76 @@ export const UserSchema = z.object({
   updatedAt: z.string().optional(),
 });
 
-export type Role = z.infer<typeof RoleSchema>;
 export type User = z.infer<typeof UserSchema>;
 
-// Mock data for fallback
-const mockUsers: User[] = [/* ... existing mock users ... */];
-const mockRoles: Role[] = [/* ... existing mock roles ... */];
-
-// Role endpoints
-export async function getRoles(): Promise<Role[]> {
-  try {
-    const response = await api.get('/api/users/roles');
-    return response.data;
-  } catch (error) {
-    console.warn('Falling back to mock data for roles');
-    return mockRoles;
+// Mock data for users
+const mockUsers: User[] = [
+  {
+    id: '1',
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    role: 'ADMIN',
+    permissions: ['users.all', 'projects.all', 'tasks.all'],
+    isActive: true,
+    lastLogin: '2024-03-25T10:30:00Z',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-03-25T10:30:00Z'
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    email: 'jane.smith@example.com',
+    role: 'MANAGER',
+    permissions: ['projects.view', 'projects.create', 'tasks.all'],
+    isActive: true,
+    lastLogin: '2024-03-24T15:45:00Z',
+    createdAt: '2024-01-15T00:00:00Z',
+    updatedAt: '2024-03-24T15:45:00Z'
+  },
+  {
+    id: '3',
+    name: 'Mike Johnson',
+    email: 'mike.johnson@example.com',
+    role: 'USER',
+    permissions: ['tasks.view', 'tasks.create'],
+    isActive: true,
+    lastLogin: '2024-03-23T09:15:00Z',
+    createdAt: '2024-02-01T00:00:00Z',
+    updatedAt: '2024-03-23T09:15:00Z'
+  },
+  {
+    id: '4',
+    name: 'Sarah Wilson',
+    email: 'sarah.wilson@example.com',
+    role: 'MANAGER',
+    permissions: ['projects.all', 'tasks.all'],
+    isActive: false,
+    lastLogin: '2024-03-20T14:20:00Z',
+    createdAt: '2024-02-15T00:00:00Z',
+    updatedAt: '2024-03-20T14:20:00Z'
+  },
+  {
+    id: '5',
+    name: 'David Brown',
+    email: 'david.brown@example.com',
+    role: 'USER',
+    permissions: ['tasks.view'],
+    isActive: true,
+    lastLogin: '2024-03-25T08:00:00Z',
+    createdAt: '2024-03-01T00:00:00Z',
+    updatedAt: '2024-03-25T08:00:00Z'
   }
-}
+];
 
-export async function getRole(id: string): Promise<Role> {
-  try {
-    const response = await api.get(`/api/users/roles/${id}`);
-    return response.data;
-  } catch (error) {
-    console.warn('Falling back to mock data for role');
-    const role = mockRoles.find(r => r.id === id);
-    if (!role) throw new Error('Role not found');
-    return role;
-  }
-}
+export const AVAILABLE_PERMISSIONS = {
+  users: ['users.view', 'users.create', 'users.edit', 'users.delete', 'users.all'],
+  projects: ['projects.view', 'projects.create', 'projects.edit', 'projects.delete', 'projects.all'],
+  tasks: ['tasks.view', 'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.all'],
+  clients: ['clients.view', 'clients.create', 'clients.edit', 'clients.delete', 'clients.all'],
+  reports: ['reports.view', 'reports.create', 'reports.export', 'reports.all'],
+  settings: ['settings.view', 'settings.edit', 'settings.all']
+} as const;
 
-export async function createRole(role: Omit<Role, 'id'>): Promise<Role> {
-  try {
-    const response = await api.post('/api/users/roles', role);
-    return response.data;
-  } catch (error) {
-    console.warn('Falling back to mock data for create role');
-    return {
-      ...role,
-      id: Math.random().toString(36).substr(2, 9)
-    };
-  }
-}
-
-export async function updateRole(id: string, role: Partial<Role>): Promise<Role> {
-  try {
-    const response = await api.patch(`/api/users/roles/${id}`, role);
-    return response.data;
-  } catch (error) {
-    console.warn('Falling back to mock data for update role');
-    const existingRole = await getRole(id);
-    return {
-      ...existingRole,
-      ...role
-    };
-  }
-}
-
-export async function deleteRole(id: string): Promise<void> {
-  try {
-    await api.delete(`/api/users/roles/${id}`);
-  } catch (error) {
-    console.warn('Falling back to mock data for delete role');
-    return Promise.resolve();
-  }
-}
-
-// User endpoints
 export async function getUsers(): Promise<User[]> {
   try {
     const response = await api.get('/api/users');
@@ -146,12 +145,3 @@ export async function deleteUser(id: string): Promise<void> {
     return Promise.resolve();
   }
 }
-
-export const AVAILABLE_PERMISSIONS = {
-  users: ['users.view', 'users.create', 'users.edit', 'users.delete'],
-  projects: ['projects.view', 'projects.create', 'projects.edit', 'projects.delete'],
-  tasks: ['tasks.view', 'tasks.create', 'tasks.edit', 'tasks.delete'],
-  clients: ['clients.view', 'clients.create', 'clients.edit', 'clients.delete'],
-  reports: ['reports.view', 'reports.create', 'reports.export'],
-  settings: ['settings.view', 'settings.edit'],
-} as const;
