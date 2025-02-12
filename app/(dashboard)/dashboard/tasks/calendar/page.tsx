@@ -210,10 +210,11 @@ export default function TaskCalendarPage() {
               <CardTitle>All Tasks</CardTitle>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="month" className="h-full">
+              <Tabs defaultValue="all" className="h-full">
                 <TabsList className="mb-4">
-                  <TabsTrigger value="month">This Month</TabsTrigger>
                   <TabsTrigger value="all">All Tasks</TabsTrigger>
+
+                  <TabsTrigger value="month">This Month</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="month" className="mt-0">
