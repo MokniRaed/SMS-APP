@@ -1,66 +1,202 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, Loader2, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Download, Upload, Loader2 } from 'lucide-react';
 
 type DataType = {
   id: string;
   name: string;
   description: string;
+  endpoint?: string;
 };
 
 const importTypes: DataType[] = [
-  { id: 'clients', name: 'Clients', description: 'Import client information' },
-  { id: 'articles', name: 'Articles', description: 'Import article catalog' },
-  { id: 'collaborateurs', name: 'Collaborateurs', description: 'Import collaborator data' },
-  { id: 'zones', name: 'Zones', description: 'Import geographical zones' },
-  { id: 'sous-zones', name: 'Sous-Zones', description: 'Import sub-zones' },
+  {
+    id: 'clients',
+    name: 'Clients',
+    description: 'Import client information',
+    endpoint: '/clients/upload-contacts'
+  },
+  {
+    id: 'articles',
+    name: 'Articles',
+    description: 'Import article catalog',
+    endpoint: '/articles/upload-articles'
+  },
+  {
+    id: 'collaborateurs',
+    name: 'Collaborateurs',
+    description: 'Import collaborator data',
+    endpoint: '/collaborators/upload-collaborators'
+  },
+  {
+    id: 'zones',
+    name: 'Zones',
+    description: 'Import geographical zones',
+    endpoint: '/projects/upload-zones'
+  },
+  {
+    id: 'sous-zones',
+    name: 'Sous-Zones',
+    description: 'Import sub-zones',
+    endpoint: '/projects/upload-sub-zones'
+  },
 ];
 
 const exportTypes: DataType[] = [
-  { id: 'tasks', name: 'Tâches', description: 'Export task records' },
-  { id: 'requests', name: 'Requêtes', description: 'Export request data' },
-  { id: 'orders', name: 'Commandes', description: 'Export order history' },
-  { id: 'projects', name: 'Projets', description: 'Export project data' },
-  { id: 'info-libre', name: 'Liste Information libre', description: 'Export free information list' },
-  { id: 'contacts', name: 'Liste Contacts client', description: 'Export client contacts' },
-  { id: 'equipment', name: 'Liste Equipements', description: 'Export equipment list' },
+  {
+    id: 'tasks',
+    name: 'Tâches',
+    description: 'Export task records',
+    endpoint: '/tasks/export'
+  },
+  {
+    id: 'requests',
+    name: 'Requêtes',
+    description: 'Export request data',
+    endpoint: '/requests/export'
+  },
+  {
+    id: 'orders',
+    name: 'Commandes',
+    description: 'Export order history',
+    endpoint: '/orders/export'
+  },
+  {
+    id: 'projects',
+    name: 'Projets',
+    description: 'Export project data',
+    endpoint: '/projects/export'
+  },
+  {
+    id: 'info-libre',
+    name: 'Liste Information libre',
+    description: 'Export free information list',
+    endpoint: '/info-libre/export'
+  },
+  {
+    id: 'contacts',
+    name: 'Liste Contacts client',
+    description: 'Export client contacts',
+    endpoint: '/clients/export-contacts'
+  },
+  {
+    id: 'equipment',
+    name: 'Liste Equipements',
+    description: 'Export equipment list',
+    endpoint: '/equipment/export'
+  },
 ];
+
+interface FilePreview {
+  name: string;
+  size: string;
+  type: string;
+}
 
 export default function SyncPage() {
   const [selectedImport, setSelectedImport] = useState<string>('');
   const [selectedExport, setSelectedExport] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const resetFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setSelectedFile(null);
+    setFilePreview(null);
+    setError(null);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-    if (!selectedImport) {
-      toast.error('Please select a data type to import');
+    setError(null);
+
+    if (!file) {
+      resetFileInput();
+      return;
+    }
+
+    // Validate file type
+    const validTypes = ['.csv', '.xlsx', '.xls'];
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (!validTypes.includes(fileExtension)) {
+      setError(`Invalid file type. Please select a CSV or Excel file (${validTypes.join(', ')})`);
+      resetFileInput();
+      return;
+    }
+
+    // Validate file size (e.g., max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setError('File size exceeds 10MB limit');
+      resetFileInput();
+      return;
+    }
+
+    setSelectedFile(file);
+    setFilePreview({
+      name: file.name,
+      size: formatFileSize(file.size),
+      type: file.type
+    });
+  };
+
+  const handleImportFile = async () => {
+    if (!selectedFile || !selectedImport) {
+      toast.error('Please select both a file and data type to import');
+      return;
+    }
+
+    const selectedType = importTypes.find(type => type.id === selectedImport);
+    if (!selectedType?.endpoint) {
+      toast.error('Invalid import type selected');
       return;
     }
 
     setIsImporting(true);
+    setError(null);
+
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', selectedFile);
       formData.append('type', selectedImport);
 
-      const response = await fetch('/api/sync/import', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${selectedType.endpoint}`, {
         method: 'POST',
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Import failed');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || 'Import failed');
+      }
+
       toast.success('Data imported successfully');
+      resetFileInput();
     } catch (error) {
-      toast.error('Failed to import data');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to import data';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsImporting(false);
     }
@@ -72,15 +208,24 @@ export default function SyncPage() {
       return;
     }
 
+    const selectedType = exportTypes.find(type => type.id === selectedExport);
+    if (!selectedType?.endpoint) {
+      toast.error('Invalid export type selected');
+      return;
+    }
+
     setIsExporting(true);
     try {
-      const response = await fetch('/api/sync/export', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${selectedType.endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: selectedExport }),
       });
 
-      if (!response.ok) throw new Error('Export failed');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || 'Export failed');
+      }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -94,7 +239,8 @@ export default function SyncPage() {
 
       toast.success('Data exported successfully');
     } catch (error) {
-      toast.error('Failed to export data');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to export data';
+      toast.error(errorMessage);
     } finally {
       setIsExporting(false);
     }
@@ -118,7 +264,13 @@ export default function SyncPage() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Select Data Type</label>
-                <Select value={selectedImport} onValueChange={setSelectedImport}>
+                <Select
+                  value={selectedImport}
+                  onValueChange={(value) => {
+                    setSelectedImport(value);
+                    setError(null);
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select data to import" />
                   </SelectTrigger>
@@ -135,10 +287,56 @@ export default function SyncPage() {
                 </Select>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Button
+                    disabled={isImporting}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Select File
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Supported formats: CSV, Excel (.xlsx, .xls)
+                  </p>
+                </div>
+
+                {filePreview && (
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                    <div className="space-y-1">
+                      <p className="font-medium">{filePreview.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {filePreview.size} • {filePreview.type}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={resetFileInput}
+                      disabled={isImporting}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
                 <Button
-                  disabled={isImporting || !selectedImport}
-                  onClick={() => document.getElementById('file-input')?.click()}
+                  disabled={isImporting || !selectedImport || !selectedFile}
+                  onClick={handleImportFile}
+                  className="w-full"
                 >
                   {isImporting ? (
                     <>
@@ -152,16 +350,6 @@ export default function SyncPage() {
                     </>
                   )}
                 </Button>
-                <input
-                  id="file-input"
-                  type="file"
-                  accept=".csv,.xlsx"
-                  className="hidden"
-                  onChange={handleImportFile}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Supported formats: CSV, Excel (.xlsx)
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -195,6 +383,7 @@ export default function SyncPage() {
               <Button
                 disabled={isExporting || !selectedExport}
                 onClick={handleExport}
+                className="w-full"
               >
                 {isExporting ? (
                   <>

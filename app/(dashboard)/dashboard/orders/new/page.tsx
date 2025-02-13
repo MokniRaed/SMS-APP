@@ -1,20 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useQuery } from '@tanstack/react-query';
-import { getClients } from '@/lib/services/clients';
-import { getArticles, type Article } from '@/lib/services/articles';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import { Loader2, Plus, Minus, Trash2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -23,6 +12,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from '@/components/ui/textarea';
+import { getArticles, type Article } from '@/lib/services/articles';
+import { getClients } from '@/lib/services/clients';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Minus, Plus, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 const OrderLineSchema = z.object({
   articleId: z.string().min(1, 'Article is required'),
@@ -87,7 +87,7 @@ export default function NewOrderPage() {
         setOrderStatus('confirmation');
       } else {
         // Submit final order
-        const response = await fetch('/api/orders', {
+        const response = await fetch('/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
@@ -111,8 +111,8 @@ export default function NewOrderPage() {
         <CardHeader>
           <CardTitle>
             {orderStatus === 'draft' ? 'Create New Order' :
-             orderStatus === 'validation' ? 'Validate Order' :
-             'Confirm Order'}
+              orderStatus === 'validation' ? 'Validate Order' :
+                'Confirm Order'}
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -1,48 +1,49 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useQuery } from '@tanstack/react-query';
 import { getClientContacts } from '@/lib/services/clients';
-import { getTasks } from '@/lib/services/tasks';
 import { getOrders } from '@/lib/services/orders';
 import { getProjects } from '@/lib/services/projects';
+import { getTasks, taskStatuses } from '@/lib/services/tasks';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Users,
+  Activity,
   Briefcase,
   FileText,
-  Activity,
-  ShoppingCart,
-  Phone,
   Mail,
-  MessageSquare
+  MessageSquare,
+  Phone,
+  ShoppingCart,
+  Users
 } from 'lucide-react';
 import {
-  BarChart,
   Bar,
-  XAxis,
-  YAxis,
+  BarChart,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
   Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts';
 
 const CustomXAxis = ({ ...props }) => (
-    <XAxis
-        tickLine={false}
-        axisLine={true}
-        {...props}
-    />
+  <XAxis
+    tickLine={false}
+    axisLine={true}
+    {...props}
+  />
 );
 
 const CustomYAxis = ({ ...props }) => (
-    <YAxis
-        tickLine={false}
-        axisLine={true}
-        {...props}
-    />
+  <YAxis
+    tickLine={false}
+    axisLine={true}
+    {...props}
+  />
 );
 
 export default function DashboardPage() {
@@ -87,18 +88,21 @@ export default function DashboardPage() {
     value
   }));
 
-  // Task status distribution
-  const taskStatusData = [
-    { name: 'Saisie', value: tasks.filter(t => t.statut_tache === 'SAISIE').length },
-    { name: 'Afféctée', value: tasks.filter(t => t.statut_tache === 'AFFECTEE').length },
-    { name: 'Accéptée', value: tasks.filter(t => t.statut_tache === 'ACCEPTEE').length },
-    { name: 'Planifiée', value: tasks.filter(t => t.statut_tache === 'PLANIFIEE').length },
-    { name: 'Reportée', value: tasks.filter(t => t.statut_tache === 'REPORTEE').length },
-    { name: 'Clôturée', value: tasks.filter(t => t.statut_tache === 'CLOTUREE').length },
-    { name: 'Annulée', value: tasks.filter(t => t.statut_tache === 'ANNULEE').length },
-  ];
+  // Task status distribution with proper mapping to status names
+  const taskStatusData = taskStatuses.map(status => ({
+    name: status.name,
+    value: tasks.filter(t => t.statut_tache === status.id).length
+  })).filter(item => item.value > 0); // Only include statuses that have tasks
 
-  const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
+  const COLORS = [
+    'hsl(var(--chart-1))',
+    'hsl(var(--chart-2))',
+    'hsl(var(--chart-3))',
+    'hsl(var(--chart-4))',
+    'hsl(var(--chart-5))',
+    'hsl(15 90% 65%)',
+    'hsl(142 72% 29%)',
+  ];
 
   const stats = [
     {
@@ -146,167 +150,215 @@ export default function DashboardPage() {
     {
       name: 'Social',
       value: contacts.filter(c =>
-          c.compte_facebook ||
-          c.compte_instagram ||
-          c.compte_linkedin ||
-          c.compte_whatsapp
+        c.compte_facebook ||
+        c.compte_instagram ||
+        c.compte_linkedin ||
+        c.compte_whatsapp
       ).length,
       icon: MessageSquare,
     },
   ];
+  console.log("taskStatusData", taskStatusData);
+
+
+  const CustomPieChartLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return percent > 0.05 ? (
+      <text
+        x={x}
+        y={y}
+        fill="currentColor"
+        textAnchor={x > cx ? 'start' : 'end'}
+        dominantBaseline="central"
+        className="text-xs font-medium"
+      >
+        {name} ({(percent * 100).toFixed(0)}%)
+      </text>
+    ) : null;
+  };
 
   return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Dashboard Overview</h1>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Dashboard Overview</h1>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-                <Card key={stat.name}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      {stat.name}
-                    </CardTitle>
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <p className="text-xs text-muted-foreground">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.name}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {stat.name}
+                </CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">
                   <span className={
                     stat.changeType === 'positive' ? 'text-green-600' :
-                        stat.changeType === 'negative' ? 'text-red-600' :
-                            'text-blue-600'
+                      stat.changeType === 'negative' ? 'text-red-600' :
+                        'text-blue-600'
                   }>
                     {stat.change}
                   </span>
-                    </p>
-                  </CardContent>
-                </Card>
-            );
-          })}
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Contact Methods Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Methods Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={contactMethods}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <CustomXAxis dataKey="name" />
-                    <CustomYAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="hsl(var(--chart-1))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Task Status Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Task Status Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                        data={taskStatusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        paddingAngle={5}
-                        dataKey="value"
-                        label
-                    >
-                      {taskStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Contact Channel Preferences */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Channel Preferences</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                        data={channelData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label
-                    >
-                      {channelData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>New Contacts</span>
-                  </div>
-                  <span className="font-medium">{contacts.length} total</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>Tasks</span>
-                  </div>
-                  <span className="font-medium">{completedTasks} completed</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                    <span>Orders</span>
-                  </div>
-                  <span className="font-medium">${totalOrderAmount.toFixed(2)} total</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    <span>Projects</span>
-                  </div>
-                  <span className="font-medium">{activeProjects} active</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Contact Methods Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact Methods Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={contactMethods}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <CustomXAxis dataKey="name" />
+                  <CustomYAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="hsl(var(--chart-1))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Task Status Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Task Status Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={taskStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={CustomPieChartLabel}
+                    labelLine={false}
+                  >
+                    {taskStatusData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    formatter={(value, entry) => {
+                      const { payload } = entry;
+                      return `${value} (${payload.value})`;
+                    }}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [`${value} tasks`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Contact Channel Preferences */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact Channel Preferences</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={channelData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    label={CustomPieChartLabel}
+                    labelLine={false}
+                  >
+                    {channelData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    formatter={(value, entry) => {
+                      const { payload } = entry;
+                      return `${value} (${payload.value})`;
+                    }}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [`${value} contacts`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Activity Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span>New Contacts</span>
+                </div>
+                <span className="font-medium">{contacts.length} total</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span>Tasks</span>
+                </div>
+                <span className="font-medium">{completedTasks} completed</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                  <span>Orders</span>
+                </div>
+                <span className="font-medium">${totalOrderAmount.toFixed(2)} total</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  <span>Projects</span>
+                </div>
+                <span className="font-medium">{activeProjects} active</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

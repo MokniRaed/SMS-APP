@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import api from '@/lib/axios';
+import { z } from 'zod';
 
 export const OrderLineSchema = z.object({
   id: z.string(),
@@ -103,7 +103,7 @@ const mockOrders: Order[] = [
 
 export async function getOrders(): Promise<Order[]> {
   try {
-    const response = await api.get('/api/orders');
+    const response = await api.get('/orders');
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for orders');
@@ -113,7 +113,7 @@ export async function getOrders(): Promise<Order[]> {
 
 export async function getOrder(id: string): Promise<Order> {
   try {
-    const response = await api.get(`/api/orders/${id}`);
+    const response = await api.get(`/orders/${id}`);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for order');
@@ -125,7 +125,7 @@ export async function getOrder(id: string): Promise<Order> {
 
 export async function createOrder(order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Promise<Order> {
   try {
-    const response = await api.post('/api/orders', order);
+    const response = await api.post('/orders', order);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for create order');
@@ -140,7 +140,7 @@ export async function createOrder(order: Omit<Order, 'id' | 'createdAt' | 'updat
 
 export async function updateOrder(id: string, order: Partial<Order>): Promise<Order> {
   try {
-    const response = await api.patch(`/api/orders/${id}`, order);
+    const response = await api.patch(`/orders/${id}`, order);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for update order');
@@ -155,7 +155,7 @@ export async function updateOrder(id: string, order: Partial<Order>): Promise<Or
 
 export async function deleteOrder(id: string): Promise<void> {
   try {
-    await api.delete(`/api/orders/${id}`);
+    await api.delete(`/orders/${id}`);
   } catch (error) {
     console.warn('Falling back to mock data for delete order');
     return Promise.resolve();
