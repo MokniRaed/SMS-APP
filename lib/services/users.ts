@@ -1,7 +1,7 @@
 'use client';
 
-import { z } from 'zod';
 import api from '@/lib/axios';
+import { z } from 'zod';
 
 export const UserSchema = z.object({
   id: z.string().optional(),
@@ -95,9 +95,19 @@ export async function getUsers(): Promise<User[]> {
   }
 }
 
+export async function getUsersByRole(roleId: string): Promise<User[]> {
+  try {
+    const response = await api.get(`/users/role/${roleId}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for users');
+    return mockUsers;
+  }
+}
+
 export async function getUser(id: string): Promise<User> {
   try {
-    const response = await api.get(`/api/users/${id}`);
+    const response = await api.get(`/users/${id}`);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for user');

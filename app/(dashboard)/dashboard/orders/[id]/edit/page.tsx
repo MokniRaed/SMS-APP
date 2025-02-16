@@ -1,33 +1,72 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { OrderSchema, type Order, getOrder, updateOrder } from '@/lib/services/orders';
-import { getClients } from '@/lib/services/clients';
-import { getArticles } from '@/lib/services/articles';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+} from "@/components/ui/command";
+import { Input } from '@/components/ui/input';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Textarea } from '@/components/ui/textarea';
+import { getArticles } from '@/lib/services/articles';
+import { getClientContacts } from '@/lib/services/clients';
+import { getLineCommandsByOrder, getOrder, OrderSchema, updateOrder, type Order } from '@/lib/services/orders';
+import { getUsersByRole } from '@/lib/services/users';
+import { cn } from '@/lib/utils';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Plus, Minus, Trash2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Loader2, Minus, Plus, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+
+// Mock user role - replace with actual auth
+const userRole = 'RESPONSABLE';
 
 export default function EditOrderPage({ params }: { params: { id: string } }) {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [open, setOpen] = useState(false);
+    const [quantity, setQuantity] = useState(1);
 
     const { data: order, isLoading: orderLoading } = useQuery({
         queryKey: ['order', params.id],
         queryFn: () => getOrder(params.id)
     });
 
+    const { data: cmdLines = [], isLoading: cmdLinesLoading } = useQuery({
+        queryKey: ['cmdLines', params.id],
+        queryFn: () => getLineCommandsByOrder(params.id),
+        enabled: !!order
+    });
+
     const { data: clients = [] } = useQuery({
-        queryKey: ['clients'],
-        queryFn: getClients
+        queryKey: ['clientContacts'],
+        queryFn: getClientContacts
+    });
+
+    const { data: collaborators = [] } = useQuery({
+        queryKey: ['collaborators'],
+        queryFn: () => getUsersByRole("679694ee22268f25bdfcba23")
     });
 
     const { data: articles = [] } = useQuery({
@@ -37,184 +76,421 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
 
     const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<Order>({
         resolver: zodResolver(OrderSchema),
-        values: order
+        defaultValues: {
+            date_cmd: order?.date_cmd ? new Date(order.date_cmd).toISOString().split('T')[0] : undefined,
+            id_client: order?.id_client?._id,
+            id_collaborateur: order?.id_collaborateur?._id,
+            notes_cmd: order?.notes_cmd,
+            articles: cmdLines
+        }
     });
 
-    const watchLines = watch('lines');
+    const watchArticles = watch('articles') || [];
 
-    const handleQuantityChange = (index: number, change: number) => {
-        const currentQuantity = watchLines[index]?.quantity || 0;
+    const handleQuantityChange = (index: number, change: number, field: 'quantite_cmd' | 'quantite_valid' | 'quantite_confr') => {
+        const currentArticles = [...watchArticles];
+        const currentQuantity = currentArticles[index]?.[field] || 0;
         const newQuantity = Math.max(1, currentQuantity + change);
-        const lines = [...watchLines];
-        lines[index] = { ...lines[index], quantity: newQuantity };
-        setValue('lines', lines);
+
+        // Apply validation rules based on user role and field
+        if (userRole === 'RESPONSABLE' && field === 'quantite_valid') {
+            // Responsable can set validated quantity
+            currentArticles[index] = {
+                ...currentArticles[index],
+                quantite_valid: newQuantity,
+                statut_art_cmd: '67b166f9d3246eb50d70e09d' // VALIDATED
+            };
+        } else if (['CLIENT', 'COLLABORATEUR'].includes(userRole) && field === 'quantite_confr') {
+            // Client/Collaborateur can set confirmed quantity based on validated quantity
+            const validatedQty = currentArticles[index].quantite_valid || 0;
+            if (newQuantity <= validatedQty) {
+                currentArticles[index] = {
+                    ...currentArticles[index],
+                    quantite_confr: newQuantity,
+                    statut_art_cmd: '67b166fed3246eb50d70e09e' // CONFIRMED
+                };
+            } else {
+                toast.error('Confirmed quantity cannot exceed validated quantity');
+                return;
+            }
+        }
+
+        setValue('articles', currentArticles);
+    };
+
+    const handleAddArticle = (article: any) => {
+        const currentArticles = [...watchArticles];
+        currentArticles.push({
+            id_article: article._id,
+            quantite_cmd: quantity,
+            notes_cmd: '',
+            statut_art_cmd: '67b1670ed3246eb50d70e09c' // PENDING
+        });
+        setValue('articles', currentArticles);
+        setQuantity(1);
+        setOpen(false);
+    };
+
+    const handleRemoveArticle = (index: number) => {
+        const currentArticles = [...watchArticles];
+        currentArticles.splice(index, 1);
+        setValue('articles', currentArticles);
     };
 
     const onSubmit = async (data: Order) => {
         setIsSubmitting(true);
         try {
+            // Validate quantities based on user role
+            if (userRole === 'RESPONSABLE') {
+                // Ensure all articles have valid validated quantities
+                const invalidArticles = data.articles.filter(
+                    article => !article.quantite_valid || article.quantite_valid <= 0
+                );
+                if (invalidArticles.length > 0) {
+                    throw new Error('All articles must have valid validated quantities');
+                }
+            } else if (['CLIENT', 'COLLABORATEUR'].includes(userRole)) {
+                // Ensure all articles have valid confirmed quantities
+                const invalidArticles = data.articles.filter(
+                    article => !article.quantite_confr || article.quantite_confr <= 0
+                );
+                if (invalidArticles.length > 0) {
+                    throw new Error('All articles must have valid confirmed quantities');
+                }
+            }
+
             await updateOrder(params.id, data);
             toast.success('Order updated successfully');
             router.push('/dashboard/orders');
         } catch (error) {
-            toast.error('Failed to update order');
+            toast.error(error instanceof Error ? error.message : 'Failed to update order');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (orderLoading) return <div>Loading...</div>;
+    if (orderLoading || cmdLinesLoading) return <div>Loading...</div>;
     if (!order) return <div>Order not found</div>;
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'PENDING':
+                return 'bg-gray-100 text-gray-800';
+            case 'VALIDATED':
+                return 'bg-blue-100 text-blue-800';
+            case 'CONFIRMED':
+                return 'bg-green-100 text-green-800';
+            case 'CANCELLED':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    // Determine if user can edit based on role and order status
+    const canEdit = () => {
+        if (userRole === 'RESPONSABLE') {
+            return ['VALIDATION', 'VALIDATED'].includes(order.statut_cmd.description);
+        }
+        if (['CLIENT', 'COLLABORATEUR'].includes(userRole)) {
+            return order.statut_cmd.description === 'VALIDATED';
+        }
+        return false;
+    };
 
     return (
         <div className="max-w-4xl mx-auto">
             <Card>
                 <CardHeader>
-                    <CardTitle>Edit Order #{order.id}</CardTitle>
+                    <CardTitle>Edit Order #{order._id}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
+                                <label className="text-sm font-medium">Collaborator</label>
+                                <Select
+                                    defaultValue={order.id_collaborateur._id}
+                                    onValueChange={(value) => setValue('id_collaborateur', value)}
+                                    disabled={!canEdit() || isSubmitting}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select collaborator" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {collaborators.map((collaborator) => (
+                                            <SelectItem key={collaborator._id} value={collaborator._id}>
+                                                {collaborator.username}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.id_collaborateur && (
+                                    <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
                                 <label className="text-sm font-medium">Client</label>
                                 <Select
-                                    defaultValue={order.clientId}
-                                    onValueChange={(value) => setValue('clientId', value)}
+                                    defaultValue={order.id_client._id}
+                                    onValueChange={(value) => setValue('id_client', value)}
+                                    disabled={!canEdit() || isSubmitting}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select client" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {clients.map((client) => (
-                                            <SelectItem key={client.id} value={client.id}>
-                                                {client.name}
+                                            <SelectItem key={client._id} value={client._id}>
+                                                {client.nom_prenom_contact}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {errors.clientId && (
-                                    <p className="text-sm text-red-500">{errors.clientId.message}</p>
+                                {errors.id_client && (
+                                    <p className="text-sm text-red-500">{errors.id_client.message}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Order Date</label>
+                                <Input
+                                    type="date"
+                                    defaultValue={new Date(order.date_cmd).toISOString().split('T')[0]}
+                                    {...register('date_cmd')}
+                                    disabled={!canEdit() || isSubmitting}
+                                />
+                                {errors.date_cmd && (
+                                    <p className="text-sm text-red-500">{errors.date_cmd.message}</p>
                                 )}
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Date</label>
+                                <label className="text-sm font-medium">Delivery Date</label>
                                 <Input
                                     type="date"
-                                    {...register('date')}
-                                    defaultValue={new Date(order.date).toISOString().split('T')[0]}
+                                    defaultValue={order.date_livraison ? new Date(order.date_livraison).toISOString().split('T')[0] : undefined}
+                                    {...register('date_livraison')}
+                                    disabled={!canEdit() || isSubmitting}
                                 />
-                                {errors.date && (
-                                    <p className="text-sm text-red-500">{errors.date.message}</p>
+                                {errors.date_livraison && (
+                                    <p className="text-sm text-red-500">{errors.date_livraison.message}</p>
                                 )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            {canEdit() && (
+                                <div className="flex items-center justify-between">
+                                    <Popover open={open} onOpenChange={setOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={open}
+                                                className="w-[300px] justify-between"
+                                            >
+                                                Select an article...
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[300px] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search articles..." />
+                                                <CommandEmpty>No article found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {articles.map((article) => (
+                                                        <CommandItem
+                                                            key={article._id}
+                                                            value={article.art_designation}
+                                                            onSelect={() => handleAddArticle(article)}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    watchArticles.some(line => line.id_article === article._id)
+                                                                        ? "opacity-100"
+                                                                        : "opacity-0"
+                                                                )}
+                                                            />
+                                                            <div className="flex flex-col">
+                                                                <span>{article.art_designation}</span>
+                                                                <span className="text-sm text-muted-foreground">
+                                                                    {article.art_unite_vente}
+                                                                </span>
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm font-medium">Quantity:</label>
+                                            <div className="flex items-center">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="icon"
+                                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                                >
+                                                    <Minus className="h-4 w-4" />
+                                                </Button>
+                                                <span className="w-12 text-center">{quantity}</span>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="icon"
+                                                    onClick={() => setQuantity(quantity + 1)}
+                                                >
+                                                    <Plus className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Article</TableHead>
+                                            <TableHead>Initial Quantity</TableHead>
+                                            {userRole === 'RESPONSABLE' && <TableHead>Validated Quantity</TableHead>}
+
+                                            {['CLIENT', 'COLLABORATEUR'].includes(userRole) && <TableHead>Confirmed Quantity</TableHead>}
+
+                                            <TableHead>Notes</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            {canEdit() && <TableHead>Actions</TableHead>}
+
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {cmdLines.map((line, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{line.id_article.art_designation}</span>
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {line.id_article.art_unite_vente}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className="w-12 text-center">
+                                                        {line.quantite_cmd}
+                                                    </span>
+                                                </TableCell>
+                                                {userRole === 'RESPONSABLE' && (
+                                                    <TableCell>
+                                                        <div className="flex items-center space-x-2">
+                                                            {canEdit() && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    onClick={() => handleQuantityChange(index, -1, 'quantite_valid')}
+                                                                    disabled={isSubmitting}
+                                                                >
+                                                                    <Minus className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                            <span className="w-12 text-center">
+                                                                {line.quantite_valid || 0}
+                                                            </span>
+                                                            {canEdit() && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    onClick={() => handleQuantityChange(index, 1, 'quantite_valid')}
+                                                                    disabled={isSubmitting}
+                                                                >
+                                                                    <Plus className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                )}
+                                                {['CLIENT', 'COLLABORATEUR'].includes(userRole) && (
+                                                    <TableCell>
+                                                        <div className="flex items-center space-x-2">
+                                                            {canEdit() && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    onClick={() => handleQuantityChange(index, -1, 'quantite_confr')}
+                                                                    disabled={isSubmitting}
+                                                                >
+                                                                    <Minus className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                            <span className="w-12 text-center">
+                                                                {line.quantite_confr || 0}
+                                                            </span>
+                                                            {canEdit() && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    onClick={() => handleQuantityChange(index, 1, 'quantite_confr')}
+                                                                    disabled={isSubmitting}
+                                                                >
+                                                                    <Plus className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                )}
+                                                <TableCell>
+                                                    <Input
+                                                        defaultValue={line.notes_cmd}
+                                                        {...register(`articles.${index}.notes_cmd`)}
+                                                        disabled={!canEdit() || isSubmitting}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge className={getStatusColor(line.statut_art_cmd.description)}>
+                                                        {line.statut_art_cmd.description}
+                                                    </Badge>
+                                                </TableCell>
+                                                {canEdit() && (
+                                                    <TableCell>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => handleRemoveArticle(index)}
+                                                            disabled={isSubmitting}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                )}
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Notes</label>
-                            <Textarea {...register('notes')} />
-                            {errors.notes && (
-                                <p className="text-sm text-red-500">{errors.notes.message}</p>
+                            <Textarea
+                                defaultValue={order.notes_cmd}
+                                {...register('notes_cmd')}
+                                disabled={!canEdit() || isSubmitting}
+                            />
+                            {errors.notes_cmd && (
+                                <p className="text-sm text-red-500">{errors.notes_cmd.message}</p>
                             )}
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-medium">Order Lines</h3>
-                                <Button
-                                    type="button"
-                                    onClick={() => {
-                                        const lines = [...watchLines];
-                                        lines.push({
-                                            id: Math.random().toString(),
-                                            articleId: '',
-                                            quantity: 1,
-                                            status: 'PENDING'
-                                        });
-                                        setValue('lines', lines);
-                                    }}
-                                >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Line
-                                </Button>
-                            </div>
-
-                            {watchLines.map((line, index) => (
-                                <Card key={line.id}>
-                                    <CardContent className="p-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium">Article</label>
-                                                <Select
-                                                    defaultValue={line.articleId}
-                                                    onValueChange={(value) => {
-                                                        const lines = [...watchLines];
-                                                        lines[index] = { ...lines[index], articleId: value };
-                                                        setValue('lines', lines);
-                                                    }}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select article" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {articles.map((article) => (
-                                                            <SelectItem key={article.id} value={article.id}>
-                                                                {article.name} (${article.price})
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium">Quantity</label>
-                                                <div className="flex items-center space-x-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="icon"
-                                                        onClick={() => handleQuantityChange(index, -1)}
-                                                    >
-                                                        <Minus className="h-4 w-4" />
-                                                    </Button>
-                                                    <Input
-                                                        type="number"
-                                                        min="1"
-                                                        {...register(`lines.${index}.quantity`)}
-                                                        className="w-20 text-center"
-                                                    />
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="icon"
-                                                        onClick={() => handleQuantityChange(index, 1)}
-                                                    >
-                                                        <Plus className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="ml-auto"
-                                                        onClick={() => {
-                                                            const lines = [...watchLines];
-                                                            lines.splice(index, 1);
-                                                            setValue('lines', lines);
-                                                        }}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-2">
-                                            <label className="text-sm font-medium">Notes</label>
-                                            <Input {...register(`lines.${index}.notes`)} />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
                         </div>
 
                         <div className="flex justify-end space-x-4">
@@ -226,16 +502,18 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Updating...
-                                    </>
-                                ) : (
-                                    'Update Order'
-                                )}
-                            </Button>
+                            {canEdit() && (
+                                <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Updating...
+                                        </>
+                                    ) : (
+                                        'Update Order'
+                                    )}
+                                </Button>
+                            )}
                         </div>
                     </form>
                 </CardContent>

@@ -2,105 +2,65 @@ import api from '@/lib/axios';
 import { z } from 'zod';
 
 export const OrderLineSchema = z.object({
-  id: z.string(),
-  articleId: z.string(),
-  quantity: z.number().min(1),
-  notes: z.string().optional(),
-  status: z.enum(['PENDING', 'VALIDATED', 'CONFIRMED', 'CANCELLED']),
+  id_article: z.string().min(1, 'Article is required'),
+  quantite_cmd: z.number().min(1, 'Quantity must be at least 1'),
+  quantite_valid: z.number().optional(),
+  quantite_confr: z.number().optional(),
+  statut_art_cmd: z.enum(['PENDING', 'VALIDATED', 'CONFIRMED', 'CANCELLED']),
+  notes_cmd: z.string().optional(),
 });
 
 export const OrderSchema = z.object({
-  id: z.string(),
-  clientId: z.string(),
-  date: z.string(),
-  notes: z.string().optional(),
-  status: z.enum(['DRAFT', 'VALIDATION', 'CONFIRMED', 'CANCELLED']),
-  lines: z.array(OrderLineSchema),
-  totalAmount: z.number(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
+  date_cmd: z.string().min(1, 'Date is required'),
+  id_client: z.string().min(1, 'Client is required'),
+  id_collaborateur: z.string().min(1, 'Collaborator is required'),
+  statut_cmd: z.enum(['DRAFT', 'VALIDATION', 'VALIDATED', 'CONFIRMED', 'DELIVERED', 'CANCELLED']),
+  date_livraison: z.string().optional(),
+  notes_cmd: z.string().optional(),
+  articles: z.array(OrderLineSchema).min(1, 'At least one article is required'),
 });
 
 export type OrderLine = z.infer<typeof OrderLineSchema>;
 export type Order = z.infer<typeof OrderSchema>;
 
-// Mock data for orders
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    clientId: '1',
-    date: '2024-03-20',
-    notes: 'Priority delivery requested',
-    status: 'CONFIRMED',
-    lines: [
-      {
-        id: '1',
-        articleId: '1',
-        quantity: 2,
-        status: 'CONFIRMED',
-        notes: 'Special configuration needed'
-      },
-      {
-        id: '2',
-        articleId: '2',
-        quantity: 5,
-        status: 'CONFIRMED',
-      }
-    ],
-    totalAmount: 2799.93,
-    createdAt: '2024-03-20T10:00:00Z',
-    updatedAt: '2024-03-20T14:30:00Z'
-  },
-  {
-    id: '2',
-    clientId: '2',
-    date: '2024-03-21',
-    status: 'VALIDATION',
-    lines: [
-      {
-        id: '3',
-        articleId: '3',
-        quantity: 1,
-        status: 'PENDING',
-      },
-      {
-        id: '4',
-        articleId: '4',
-        quantity: 3,
-        status: 'PENDING',
-      }
-    ],
-    totalAmount: 789.96,
-    createdAt: '2024-03-21T09:15:00Z',
-    updatedAt: '2024-03-21T09:15:00Z'
-  },
-  {
-    id: '3',
-    clientId: '3',
-    date: '2024-03-22',
-    notes: 'Bulk order discount applied',
-    status: 'DRAFT',
-    lines: [
-      {
-        id: '5',
-        articleId: '5',
-        quantity: 10,
-        status: 'PENDING',
-      },
-      {
-        id: '6',
-        articleId: '6',
-        quantity: 8,
-        status: 'PENDING',
-        notes: 'Check stock availability'
-      }
-    ],
-    totalAmount: 3099.82,
-    createdAt: '2024-03-22T11:45:00Z',
-    updatedAt: '2024-03-22T11:45:00Z'
+// Order status transition functions
+export async function validateOrder(id: string): Promise<Order> {
+  try {
+    const response = await api.post(`/api/orders/${id}/validate`);
+    return response.data;
+  } catch (error) {
+    throw new Error('Failed to validate order');
   }
-];
+}
 
+export async function confirmOrder(id: string): Promise<Order> {
+  try {
+    const response = await api.post(`/api/orders/${id}/confirm`);
+    return response.data;
+  } catch (error) {
+    throw new Error('Failed to confirm order');
+  }
+}
+
+export async function deliverOrder(id: string): Promise<Order> {
+  try {
+    const response = await api.post(`/api/orders/${id}/deliver`);
+    return response.data;
+  } catch (error) {
+    throw new Error('Failed to mark order as delivered');
+  }
+}
+
+export async function cancelOrder(id: string, reason: string): Promise<Order> {
+  try {
+    const response = await api.post(`/api/orders/${id}/cancel`, { reason });
+    return response.data;
+  } catch (error) {
+    throw new Error('Failed to cancel order');
+  }
+}
+
+// Base CRUD operations
 export async function getOrders(): Promise<Order[]> {
   try {
     const response = await api.get('/orders');
@@ -108,6 +68,18 @@ export async function getOrders(): Promise<Order[]> {
   } catch (error) {
     console.warn('Falling back to mock data for orders');
     return mockOrders;
+  }
+
+
+}
+
+export async function getLineCommandsByOrder(id: string): Promise<OrderLine[]> {
+  try {
+    const response = await api.get(`/orders/cmd/${id}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for order');
+
   }
 }
 
@@ -117,47 +89,98 @@ export async function getOrder(id: string): Promise<Order> {
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for order');
-    const order = mockOrders.find(o => o.id === id);
+    const order = mockOrders.find(o => o._id === id);
     if (!order) throw new Error('Order not found');
     return order;
   }
 }
 
-export async function createOrder(order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Promise<Order> {
+export async function createOrder(order: Omit<Order, '_id'>): Promise<Order> {
   try {
-    const response = await api.post('/orders', order);
+    const response = await api.post('/api/orders', {
+      ...order,
+      statut_cmd: 'VALIDATION',
+      articles: order.articles.map(article => ({
+        ...article,
+        statut_art_cmd: 'PENDING'
+      }))
+    });
     return response.data;
   } catch (error) {
-    console.warn('Falling back to mock data for create order');
-    return {
-      ...order,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    throw new Error('Failed to create order');
   }
 }
 
 export async function updateOrder(id: string, order: Partial<Order>): Promise<Order> {
   try {
-    const response = await api.patch(`/orders/${id}`, order);
+    const response = await api.patch(`/api/orders/${id}`, order);
     return response.data;
   } catch (error) {
-    console.warn('Falling back to mock data for update order');
-    const existingOrder = await getOrder(id);
-    return {
-      ...existingOrder,
-      ...order,
-      updatedAt: new Date().toISOString()
-    };
+    throw new Error('Failed to update order');
   }
 }
 
 export async function deleteOrder(id: string): Promise<void> {
   try {
-    await api.delete(`/orders/${id}`);
+    await api.delete(`/api/orders/${id}`);
   } catch (error) {
-    console.warn('Falling back to mock data for delete order');
-    return Promise.resolve();
+    throw new Error('Failed to delete order');
   }
 }
+
+// Helper functions
+export function canEditOrder(userRole: string, orderStatus: string): boolean {
+  if (userRole === 'RESPONSABLE') {
+    return ['VALIDATION', 'VALIDATED'].includes(orderStatus);
+  }
+  if (['CLIENT', 'COLLABORATEUR'].includes(userRole)) {
+    return orderStatus === 'VALIDATED';
+  }
+  return false;
+}
+
+export function canConfirmOrder(userRole: string, orderStatus: string): boolean {
+  return ['CLIENT', 'COLLABORATEUR'].includes(userRole) && orderStatus === 'VALIDATED';
+}
+
+export function canValidateOrder(userRole: string, orderStatus: string): boolean {
+  return userRole === 'RESPONSABLE' && orderStatus === 'VALIDATION';
+}
+
+export function canDeliverOrder(userRole: string, orderStatus: string): boolean {
+  return userRole === 'RESPONSABLE' && orderStatus === 'CONFIRMED';
+}
+
+export function canCancelOrder(userRole: string, orderStatus: string): boolean {
+  return userRole === 'RESPONSABLE' && ['VALIDATED', 'CONFIRMED'].includes(orderStatus);
+}
+
+// Mock data for development
+const mockOrders: Order[] = [
+  {
+    _id: '1',
+    date_cmd: '2024-03-20',
+    id_client: 'client1',
+    id_collaborateur: 'collab1',
+    statut_cmd: 'CONFIRMED',
+    date_livraison: '2024-03-25',
+    notes_cmd: 'Priority delivery requested',
+    articles: [
+      {
+        id_article: 'art1',
+        quantite_cmd: 2,
+        quantite_valid: 2,
+        quantite_confr: 2,
+        statut_art_cmd: 'CONFIRMED',
+        notes_cmd: 'Special configuration needed'
+      },
+      {
+        id_article: 'art2',
+        quantite_cmd: 5,
+        quantite_valid: 5,
+        quantite_confr: 5,
+        statut_art_cmd: 'CONFIRMED'
+      }
+    ]
+  }
+];

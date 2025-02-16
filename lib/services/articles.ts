@@ -1,13 +1,18 @@
-import { z } from 'zod';
 import api from '@/lib/axios';
+import { z } from 'zod';
 
 export const ArticleSchema = z.object({
-  id: z.string().min(1, 'Article ID is required'),
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  price: z.number().min(0, 'Price must be positive'),
-  stock: z.number().min(0, 'Stock must be positive'),
-  category: z.string().optional(),
+  art_id: z.string().min(1, 'Article ID is required'),
+  art_designation: z.string().min(1, 'Article designation is required'),
+  art_unite_vente: z.string().optional(),
+  art_suivi_stock: z.string().optional(),
+  art_code_famille: z.string().optional(),
+  art_famille: z.string().optional(),
+  art_cat_niv_1: z.string().optional(),
+  art_cat_niv_2: z.string().optional(),
+  art_marque: z.string().optional(),
+  art_st: z.string().optional(),
+  art_tb: z.string().optional(),
 });
 
 export type Article = z.infer<typeof ArticleSchema>;
@@ -15,58 +20,109 @@ export type Article = z.infer<typeof ArticleSchema>;
 // Mock data for articles
 const mockArticles: Article[] = [
   {
-    id: '1',
-    name: 'Premium Laptop',
-    description: '15" High-performance laptop with SSD',
-    price: 1299.99,
-    stock: 50,
-    category: 'Electronics',
+    art_id: '1',
+    art_designation: 'Premium Laptop',
+    art_unite_vente: 'Piece',
+    art_suivi_stock: 'In Stock',
+    art_code_famille: 'ELEC',
+    art_famille: 'Laptops',
+    art_cat_niv_1: 'Electronics',
+    art_cat_niv_2: 'Computers',
+    art_marque: 'BrandA',
+    art_st: 'Available',
+    art_tb: 'High-end',
   },
   {
-    id: '2',
-    name: 'Wireless Mouse',
-    description: 'Ergonomic wireless mouse with long battery life',
-    price: 49.99,
-    stock: 200,
-    category: 'Accessories',
+    art_id: '2',
+    art_designation: 'Wireless Mouse',
+    art_unite_vente: 'Piece',
+    art_suivi_stock: 'In Stock',
+    art_code_famille: 'ACC',
+    art_famille: 'Mice',
+    art_cat_niv_1: 'Accessories',
+    art_cat_niv_2: 'Peripherals',
+    art_marque: 'BrandB',
+    art_st: 'Available',
+    art_tb: 'Mid-range',
   },
   {
-    id: '3',
-    name: 'External Monitor',
-    description: '27" 4K Ultra HD Monitor',
-    price: 399.99,
-    stock: 75,
-    category: 'Electronics',
+    art_id: '3',
+    art_designation: 'External Monitor',
+    art_unite_vente: 'Piece',
+    art_suivi_stock: 'Out of Stock',
+    art_code_famille: 'ELEC',
+    art_famille: 'Monitors',
+    art_cat_niv_1: 'Electronics',
+    art_cat_niv_2: 'Displays',
+    art_marque: 'BrandC',
+    art_st: 'Unavailable',
+    art_tb: 'Premium',
   },
   {
-    id: '4',
-    name: 'USB-C Dock',
-    description: 'Universal docking station with multiple ports',
-    price: 129.99,
-    stock: 100,
-    category: 'Accessories',
+    art_id: '4',
+    art_designation: 'USB-C Dock',
+    art_unite_vente: 'Piece',
+    art_suivi_stock: 'In Stock',
+    art_code_famille: 'ACC',
+    art_famille: 'Docking Stations',
+    art_cat_niv_1: 'Accessories',
+    art_cat_niv_2: 'Peripherals',
+    art_marque: 'BrandD',
+    art_st: 'Available',
+    art_tb: 'Standard',
   },
   {
-    id: '5',
-    name: 'Mechanical Keyboard',
-    description: 'RGB mechanical keyboard with Cherry MX switches',
-    price: 149.99,
-    stock: 150,
-    category: 'Accessories',
+    art_id: '5',
+    art_designation: 'Mechanical Keyboard',
+    art_unite_vente: 'Piece',
+    art_suivi_stock: 'In Stock',
+    art_code_famille: 'ACC',
+    art_famille: 'Keyboards',
+    art_cat_niv_1: 'Accessories',
+    art_cat_niv_2: 'Input Devices',
+    art_marque: 'BrandE',
+    art_st: 'Available',
+    art_tb: 'High-end',
   },
   {
-    id: '6',
-    name: 'Wireless Headphones',
-    description: 'Noise-cancelling Bluetooth headphones',
-    price: 199.99,
-    stock: 120,
-    category: 'Audio',
+    art_id: '6',
+    art_designation: 'Wireless Headphones',
+    art_unite_vente: 'Piece',
+    art_suivi_stock: 'In Stock',
+    art_code_famille: 'AUDIO',
+    art_famille: 'Headphones',
+    art_cat_niv_1: 'Audio',
+    art_cat_niv_2: 'Wireless',
+    art_marque: 'BrandF',
+    art_st: 'Available',
+    art_tb: 'Mid-range',
   },
 ];
 
+
+
 export async function getArticles(): Promise<Article[]> {
-  // For demo purposes, return mock data
-  return Promise.resolve(mockArticles);
+  // // For demo purposes, return mock data
+  // return Promise.resolve(mockArticles);
+
+  try {
+    const response = await api.get(`/articles`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for client contact');
+    return mockArticles;
+  }
+}
+
+export async function getArticleByOrderId(orderId: string): Promise<Article[]> {
+
+  try {
+    const response = await api.get(`/articles/order/:id`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for client contact');
+    return mockArticles;
+  }
 }
 
 export async function getArticle(id: string): Promise<Article> {

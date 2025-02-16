@@ -1,13 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTasks, deleteTask, taskTypes, taskStatuses } from '@/lib/services/tasks';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, Eye, LayoutGrid, Table as TableIcon, ArrowUpDown, MoreVertical } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,12 +10,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TableSkeleton } from '@/components/ui/skeletons/table-skeleton';
 import {
   Table,
   TableBody,
@@ -32,9 +29,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { deleteTask, getTasks, taskStatuses, taskTypes, updateTask } from '@/lib/services/tasks';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CardSkeleton } from '@/components/ui/skeletons/card-skeleton';
-import { TableSkeleton } from '@/components/ui/skeletons/table-skeleton';
+import { ArrowUpDown, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 type ViewMode = 'grid' | 'table';
 type SortField = 'title_tache' | 'type_tache' | 'date_tache' | 'statut_tache';
@@ -47,10 +48,37 @@ export default function TasksPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [sortField, setSortField] = useState<SortField>('date_tache');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: getTasks
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Task> }) => {
+      return updateTask(id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Tasks updated successfully');
+      setSelectedTasks([]);
+    },
+    onError: () => {
+      toast.error('Failed to update tasks');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Task deleted successfully');
+      setDeleteTaskId(null);
+    },
+    onError: () => {
+      toast.error('Failed to delete task');
+    }
   });
 
   const sortedTasks = [...tasks].sort((a, b) => {
@@ -72,18 +100,6 @@ export default function TasksPage() {
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Task deleted successfully');
-      setDeleteTaskId(null);
-    },
-    onError: () => {
-      toast.error('Failed to delete task');
-    }
-  });
-
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -93,15 +109,60 @@ export default function TasksPage() {
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedTasks(tasks.map(task => task.id!));
+    } else {
+      setSelectedTasks([]);
+    }
+  };
+
+  const handleSelectTask = (taskId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTasks(prev => [...prev, taskId]);
+    } else {
+      setSelectedTasks(prev => prev.filter(id => id !== taskId));
+    }
+  };
+
+  const handleBulkStatusUpdate = async (status: string) => {
+    try {
+      await Promise.all(
+        selectedTasks.map(taskId =>
+          updateMutation.mutateAsync({
+            id: taskId,
+            data: { statut_tache: status }
+          })
+        )
+      );
+    } catch (error) {
+      toast.error('Failed to update tasks');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await Promise.all(
+        selectedTasks.map(taskId => deleteMutation.mutateAsync(taskId))
+      );
+      setSelectedTasks([]);
+      toast.success('Tasks deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete tasks');
+    }
+  };
+
   const getStatusColor = (statusId: string) => {
     const colors = {
-      '1': 'bg-gray-100 text-gray-800',
-      '2': 'bg-blue-100 text-blue-800',
-      '3': 'bg-yellow-100 text-yellow-800',
-      '4': 'bg-green-100 text-green-800',
-      '5': 'bg-red-100 text-red-800'
+      'SAISIE': 'bg-gray-100 text-gray-800',
+      'AFFECTEE': 'bg-blue-100 text-blue-800',
+      'ACCEPTEE': 'bg-yellow-100 text-yellow-800',
+      'PLANIFIEE': 'bg-purple-100 text-purple-800',
+      'REPORTEE': 'bg-orange-100 text-orange-800',
+      'CLOTUREE': 'bg-green-100 text-green-800',
+      'ANNULEE': 'bg-red-100 text-red-800'
     };
-    return colors[statusId as keyof typeof colors] || colors['1'];
+    return colors[statusId as keyof typeof colors] || colors['SAISIE'];
   };
 
   const getTaskTypeName = (typeId: string) => {
@@ -139,7 +200,7 @@ export default function TasksPage() {
           <Pencil className="h-4 w-4 mr-2" />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setDeleteTaskId(task.id)}
           className="text-red-600"
         >
@@ -150,58 +211,42 @@ export default function TasksPage() {
     </DropdownMenu>
   );
 
-  const renderGridView = () => {
-    if (isLoading) {
-      return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <CardSkeleton key={index} />
-          ))}
-        </div>
-      );
-    }
-
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {sortedTasks.map((task) => (
-          <Card 
-            key={task.id}
-            className="cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+  const renderBulkActions = () => (
+    <div className="flex items-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" disabled={selectedTasks.length === 0}>
+            Bulk Actions ({selectedTasks.length})
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={() => handleBulkStatusUpdate('AFFECTEE')}>
+            Mark as Assigned
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleBulkStatusUpdate('ACCEPTEE')}>
+            Mark as Accepted
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleBulkStatusUpdate('PLANIFIEE')}>
+            Mark as Planned
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleBulkStatusUpdate('CLOTUREE')}>
+            Mark as Completed
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={handleBulkDelete}
+            className="text-red-600"
           >
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-semibold text-lg">{task.title_tache}</h3>
-                  <p className="text-sm text-muted-foreground">{getTaskTypeName(task.type_tache)}</p>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(task.statut_tache)}`}>
-                  {getTaskStatusName(task.statut_tache)}
-                </span>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {task.description_tache}
-                </p>
-
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                  <span>Date: {format(new Date(task.date_tache), 'MMM dd, yyyy')}</span>
-                  {task.date_execution_tache && (
-                    <span>Execution: {format(new Date(task.date_execution_tache), 'MMM dd, yyyy')}</span>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  };
+            Delete Selected
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 
   const renderTableView = () => {
     if (isLoading) {
-      return <TableSkeleton columnCount={7} />;
+      return <TableSkeleton columnCount={8} />;
     }
 
     return (
@@ -209,6 +254,12 @@ export default function TasksPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={selectedTasks.length === tasks.length}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead>{renderSortButton('title_tache', 'Title')}</TableHead>
               <TableHead>{renderSortButton('type_tache', 'Type')}</TableHead>
               <TableHead>{renderSortButton('date_tache', 'Date')}</TableHead>
@@ -222,12 +273,18 @@ export default function TasksPage() {
           <TableBody>
             {sortedTasks.map((task) => (
               <TableRow key={task.id}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedTasks.includes(task.id!)}
+                    onCheckedChange={(checked) => handleSelectTask(task.id!, checked as boolean)}
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{task.title_tache}</TableCell>
                 <TableCell>{getTaskTypeName(task.type_tache)}</TableCell>
                 <TableCell>{format(new Date(task.date_tache), 'MMM dd, yyyy')}</TableCell>
                 <TableCell>
-                  {task.date_execution_tache ? 
-                    format(new Date(task.date_execution_tache), 'MMM dd, yyyy') : 
+                  {task.date_execution_tache ?
+                    format(new Date(task.date_execution_tache), 'MMM dd, yyyy') :
                     '-'
                   }
                 </TableCell>
@@ -252,6 +309,7 @@ export default function TasksPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Tasks</h1>
         <div className="flex space-x-2">
+          {renderBulkActions()}
           <div className="border rounded-lg p-1">
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
@@ -275,7 +333,73 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {viewMode === 'grid' ? renderGridView() : renderTableView()}
+      {viewMode === 'grid' ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {sortedTasks.map((task) => (
+            <Card
+              key={task.id}
+              className="relative overflow-hidden"
+            >
+              <CardContent className="p-6">
+                <div className="absolute top-4 left-4">
+                  <Checkbox
+                    checked={selectedTasks.includes(task.id!)}
+                    onCheckedChange={(checked) => handleSelectTask(task.id!, checked as boolean)}
+                  />
+                </div>
+                <div className="flex justify-between items-start mb-4 pl-8">
+                  <div>
+                    <h3 className="font-semibold text-lg">{task.title_tache}</h3>
+                    <p className="text-sm text-muted-foreground">{getTaskTypeName(task.type_tache)}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(task.statut_tache)}`}>
+                    {getTaskStatusName(task.statut_tache)}
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {task.description_tache}
+                  </p>
+
+                  <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>Date: {format(new Date(task.date_tache), 'MMM dd, yyyy')}</span>
+                    {task.date_execution_tache && (
+                      <span>Execution: {format(new Date(task.date_execution_tache), 'MMM dd, yyyy')}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background to-transparent">
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/tasks/${task.id}/edit`)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteTaskId(task.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : renderTableView()}
 
       <AlertDialog open={!!deleteTaskId} onOpenChange={() => setDeleteTaskId(null)}>
         <AlertDialogContent>
