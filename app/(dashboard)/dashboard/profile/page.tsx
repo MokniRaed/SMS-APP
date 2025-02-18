@@ -1,14 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileUpload } from '@/components/file-upload';
-import { toast } from 'sonner';
-import { User, Lock, Shield, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -17,17 +11,31 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getUserProfile, updateUser, updateUserPassword, User } from '@/lib/services/users';
+import { getCurrentUserId } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 const PasswordSchema = z.object({
     currentPassword: z.string().min(1, 'Current password is required'),
     newPassword: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
-}).refine((data) => data.newPassword === data.confirmPassword, {
+    confirmNewPassword: z.string().min(1, 'Please confirm your password'),
+}).refine((data) => data.newPassword === data.confirmNewPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
+});
+
+const UserUpdateSchema = z.object({
+    username: z.string().min(1, 'Current Username is required'),
+    // email: z.string().email('Invalid email address'),
+
 });
 
 type PasswordForm = z.infer<typeof PasswordSchema>;
@@ -46,14 +54,30 @@ export default function ProfilePage() {
         resolver: zodResolver(PasswordSchema)
     });
 
-    const handleProfileUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
+    const id = getCurrentUserId()
+
+    const { data: user } = useQuery({
+        queryKey: ['user', id],
+        queryFn: () => getUserProfile(id)
+    });
+
+    const { register, handleSubmit, formState: { errors }, setValue } = useForm<User>({
+        resolver: zodResolver(UserUpdateSchema),
+        values: user
+    });
+
+    console.log("errors", passwordErrors);
+
+    const handleProfileUpdate = async (data: User) => {
         setIsSubmitting(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const response = await updateUser(id, data)
+            console.log("response", response);
+            if (response) throw new Error(`Failed to uddate Prodile : ${response?.message}`);
+
             toast.success('Profile updated successfully');
         } catch (error) {
-            toast.error('Failed to update profile');
+            toast.error(` ${error?.message}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -62,7 +86,10 @@ export default function ProfilePage() {
     const onPasswordSubmit = async (data: PasswordForm) => {
         setIsSubmitting(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const response = await updateUserPassword(id, data)
+            console.log("response", response);
+            if (response) throw new Error(`Failed to uddate Prodile : ${response?.message}`);
+
             toast.success('Password updated successfully');
             setIsPasswordDialogOpen(false);
             resetPasswordForm();
@@ -109,21 +136,25 @@ export default function ProfilePage() {
                                 <CardTitle>Profile Information</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                                <form onSubmit={handleSubmit(handleProfileUpdate)} className="space-y-4">
                                     <div className="grid gap-4">
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Full Name</label>
-                                            <Input placeholder="John Doe" />
+                                            <Input placeholder="John Doe" {...register('username')} />
+                                            {errors.username && <p className="text-sm text-red-500">{errors.username.message}</p>}
+
                                         </div>
 
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Email</label>
-                                            <Input type="email" placeholder="john@example.com" />
+                                            <Input type="email" placeholder="john@example.com" {...register('email')} disabled />
+                                            {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+
                                         </div>
 
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Phone Number</label>
-                                            <Input type="tel" placeholder="+1 (555) 000-0000" />
+                                            <Input type="tel" placeholder="+1 (555) 000-0000" disabled />
                                         </div>
                                     </div>
 
@@ -240,11 +271,11 @@ export default function ProfilePage() {
                                 <label className="text-sm font-medium">Confirm New Password</label>
                                 <Input
                                     type="password"
-                                    {...passwordRegister('confirmPassword')}
+                                    {...passwordRegister('confirmNewPassword')}
                                     disabled={isSubmitting}
                                 />
-                                {passwordErrors.confirmPassword && (
-                                    <p className="text-sm text-destructive">{passwordErrors.confirmPassword.message}</p>
+                                {passwordErrors.confirmNewPassword && (
+                                    <p className="text-sm text-destructive">{passwordErrors.confirmNewPassword.message}</p>
                                 )}
                             </div>
                         </div>

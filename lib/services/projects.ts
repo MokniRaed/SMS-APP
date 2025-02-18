@@ -1,18 +1,19 @@
-import { z } from 'zod';
 import api from '@/lib/axios';
+import { z } from 'zod';
 
 export const ProjectSchema = z.object({
-  Id_projet: z.string().min(1, 'Project ID is required'),
-  Type_projet: z.string().min(1, 'Project type is required'),
-  Produit_cible: z.string().optional(),
-  Description_projet: z.string().optional(),
-  Objectif_CA: z.number().optional(),
-  Objectif_Qte: z.number().optional(),
-  Zone_cible: z.string().optional(),
-  Periode_Date_debut: z.string().datetime(),
-  Periode_Date_fin: z.string().datetime(),
-  Statut_projet: z.string().min(1, 'Project status is required'),
-  Notes_projet: z.string().optional(),
+  // _id: z.string().min(1, 'Project ID is required'),
+  nom_projet: z.string().min(1, 'Project name is required'),
+  type_projet: z.string().min(1, 'Project type is required'),
+  produit_cible: z.string().optional(),
+  description_projet: z.string().optional(),
+  objectif_ca: z.number().optional(),
+  objectif_qte: z.number().optional(),
+  zone_cible: z.string().optional(),
+  periode_date_debut: z.string().min(1, 'Date is required'),
+  periode_date_fin: z.string().min(1, 'Date is required'),
+  statut_projet: z.string().min(1, 'Project status is required'),
+  notes_projet: z.string().optional(),
 });
 
 export type Project = z.infer<typeof ProjectSchema>;
@@ -20,88 +21,88 @@ export type Project = z.infer<typeof ProjectSchema>;
 // Mock data for projects
 const mockProjects: Project[] = [
   {
-    Id_projet: '1',
-    Type_projet: 'DEVELOPMENT',
-    Produit_cible: 'Mobile App Development',
-    Description_projet: 'Develop a new mobile application for client management',
-    Objectif_CA: 150000,
-    Objectif_Qte: 1,
-    Zone_cible: 'North America',
-    Periode_Date_debut: '2024-03-01T00:00:00Z',
-    Periode_Date_fin: '2024-06-30T00:00:00Z',
-    Statut_projet: 'IN_PROGRESS',
-    Notes_projet: 'High priority project for Q2'
+    _id: '1',
+    type_projet: 'DEVELOPMENT',
+    produit_cible: 'Mobile App Development',
+    description_projet: 'Develop a new mobile application for client management',
+    objectif_ca: 150000,
+    objectif_qte: 1,
+    zone_cible: 'North America',
+    periode_date_debut: '2024-03-01T00:00:00Z',
+    periode_date_fin: '2024-06-30T00:00:00Z',
+    statut_projet: 'IN_PROGRESS',
+    notes_projet: 'High priority project for Q2'
   },
   {
-    Id_projet: '2',
-    Type_projet: 'RESEARCH',
-    Produit_cible: 'Market Analysis',
-    Description_projet: 'Conduct market research for expansion opportunities',
-    Objectif_CA: 50000,
-    Objectif_Qte: 1,
-    Zone_cible: 'Europe',
-    Periode_Date_debut: '2024-04-01T00:00:00Z',
-    Periode_Date_fin: '2024-05-31T00:00:00Z',
-    Statut_projet: 'PLANNED',
-    Notes_projet: 'Strategic initiative for international expansion'
+    _id: '2',
+    type_projet: 'RESEARCH',
+    produit_cible: 'Market Analysis',
+    description_projet: 'Conduct market research for expansion opportunities',
+    objectif_ca: 50000,
+    objectif_qte: 1,
+    zone_cible: 'Europe',
+    periode_date_debut: '2024-04-01T00:00:00Z',
+    periode_date_fin: '2024-05-31T00:00:00Z',
+    statut_projet: 'PLANNED',
+    notes_projet: 'Strategic initiative for international expansion'
   },
   {
-    Id_projet: '3',
-    Type_projet: 'MAINTENANCE',
-    Produit_cible: 'Legacy System Update',
-    Description_projet: 'Upgrade and maintain existing client systems',
-    Objectif_CA: 75000,
-    Objectif_Qte: 5,
-    Zone_cible: 'Global',
-    Periode_Date_debut: '2024-03-15T00:00:00Z',
-    Periode_Date_fin: '2024-12-31T00:00:00Z',
-    Statut_projet: 'IN_PROGRESS',
-    Notes_projet: 'Ongoing maintenance contract'
+    _id: '3',
+    type_projet: 'MAINTENANCE',
+    produit_cible: 'Legacy System Update',
+    description_projet: 'Upgrade and maintain existing client systems',
+    objectif_ca: 75000,
+    objectif_qte: 5,
+    zone_cible: 'Global',
+    periode_date_debut: '2024-03-15T00:00:00Z',
+    periode_date_fin: '2024-12-31T00:00:00Z',
+    statut_projet: 'IN_PROGRESS',
+    notes_projet: 'Ongoing maintenance contract'
   },
   {
-    Id_projet: '4',
-    Type_projet: 'DEVELOPMENT',
-    Produit_cible: 'E-commerce Platform',
-    Description_projet: 'Build a new e-commerce platform with advanced features',
-    Objectif_CA: 200000,
-    Objectif_Qte: 1,
-    Zone_cible: 'Asia Pacific',
-    Periode_Date_debut: '2024-05-01T00:00:00Z',
-    Periode_Date_fin: '2024-11-30T00:00:00Z',
-    Statut_projet: 'PLANNED',
-    Notes_projet: 'Major project for retail client'
+    _id: '4',
+    type_projet: 'DEVELOPMENT',
+    produit_cible: 'E-commerce Platform',
+    description_projet: 'Build a new e-commerce platform with advanced features',
+    objectif_ca: 200000,
+    objectif_qte: 1,
+    zone_cible: 'Asia Pacific',
+    periode_date_debut: '2024-05-01T00:00:00Z',
+    periode_date_fin: '2024-11-30T00:00:00Z',
+    statut_projet: 'PLANNED',
+    notes_projet: 'Major project for retail client'
   },
   {
-    Id_projet: '5',
-    Type_projet: 'RESEARCH',
-    Produit_cible: 'AI Implementation',
-    Description_projet: 'Research and implement AI solutions for automation',
-    Objectif_CA: 100000,
-    Objectif_Qte: 2,
-    Zone_cible: 'Global',
-    Periode_Date_debut: '2024-04-15T00:00:00Z',
-    Periode_Date_fin: '2024-08-31T00:00:00Z',
-    Statut_projet: 'IN_PROGRESS',
-    Notes_projet: 'Innovation initiative'
+    _id: '5',
+    type_projet: 'RESEARCH',
+    produit_cible: 'AI Implementation',
+    description_projet: 'Research and implement AI solutions for automation',
+    objectif_ca: 100000,
+    objectif_qte: 2,
+    zone_cible: 'Global',
+    periode_date_debut: '2024-04-15T00:00:00Z',
+    periode_date_fin: '2024-08-31T00:00:00Z',
+    statut_projet: 'IN_PROGRESS',
+    notes_projet: 'Innovation initiative'
   },
   {
-    Id_projet: '6',
-    Type_projet: 'MAINTENANCE',
-    Produit_cible: 'Security Updates',
-    Description_projet: 'Implement security updates across client systems',
-    Objectif_CA: 80000,
-    Objectif_Qte: 10,
-    Zone_cible: 'North America',
-    Periode_Date_debut: '2024-03-01T00:00:00Z',
-    Periode_Date_fin: '2024-05-31T00:00:00Z',
-    Statut_projet: 'COMPLETED',
-    Notes_projet: 'Critical security maintenance'
+    _id: '6',
+    type_projet: 'MAINTENANCE',
+    produit_cible: 'Security Updates',
+    description_projet: 'Implement security updates across client systems',
+    objectif_ca: 80000,
+    objectif_qte: 10,
+    zone_cible: 'North America',
+    periode_date_debut: '2024-03-01T00:00:00Z',
+    periode_date_fin: '2024-05-31T00:00:00Z',
+    statut_projet: 'COMPLETED',
+    notes_projet: 'Critical security maintenance'
   }
 ];
 
 export async function getProjects(): Promise<Project[]> {
   try {
-    const response = await api.get('/api/projects');
+    const response = await api.get('/projects');
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for projects');
@@ -109,50 +110,87 @@ export async function getProjects(): Promise<Project[]> {
   }
 }
 
+
 export async function getProject(id: string): Promise<Project> {
   try {
-    const response = await api.get(`/api/projects/${id}`);
+    const response = await api.get(`/projects/${id}`);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for project');
-    const project = mockProjects.find(p => p.Id_projet === id);
+    const project = mockProjects.find(p => p._id === id);
     if (!project) throw new Error('Project not found');
     return project;
   }
 }
 
-export async function createProject(project: Omit<Project, 'Id_projet'>): Promise<Project> {
+export async function createProject(project: Omit<Project, '_id'>): Promise<Project> {
   try {
-    const response = await api.post('/api/projects', project);
+    const response = await api.post('/projects', project);
     return response.data;
   } catch (error) {
-    console.warn('Falling back to mock data for create project');
-    return {
-      ...project,
-      Id_projet: Math.random().toString(36).substr(2, 9)
-    };
+    console.log("err", error);
+    return error.response.data
+
   }
 }
 
 export async function updateProject(id: string, project: Partial<Project>): Promise<Project> {
   try {
-    const response = await api.patch(`/api/projects/${id}`, project);
+    const response = await api.patch(`/projects/${id}`, project);
     return response.data;
   } catch (error) {
-    console.warn('Falling back to mock data for update project');
-    const existingProject = await getProject(id);
-    return {
-      ...existingProject,
-      ...project
-    };
+    return error.response.data
+
   }
 }
 
 export async function deleteProject(id: string): Promise<void> {
   try {
-    await api.delete(`/api/projects/${id}`);
+    await api.delete(`/projects/${id}`);
   } catch (error) {
     console.warn('Falling back to mock data for delete project');
     return Promise.resolve();
+  }
+}
+
+
+export async function getProjectsTypes(): Promise<Project[]> {
+  try {
+    const response = await api.get('/projects/type');
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for projects');
+    return mockProjects;
+  }
+}
+
+export async function getProjectsStatus(): Promise<Project[]> {
+  try {
+    const response = await api.get('/projects/status');
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for projects');
+    return mockProjects;
+  }
+}
+
+
+export async function getProjectsProductCible(): Promise<Project[]> {
+  try {
+    const response = await api.get('/projects/produit-cible');
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for projects');
+    return mockProjects;
+  }
+}
+
+export async function getProjectsZones(): Promise<Project[]> {
+  try {
+    const response = await api.get('/projects/zones');
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for projects');
+    return mockProjects;
   }
 }

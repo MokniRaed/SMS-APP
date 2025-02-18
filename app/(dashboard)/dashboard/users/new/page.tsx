@@ -1,48 +1,59 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { UserSchema, type User, AVAILABLE_PERMISSIONS } from '@/lib/services/users';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+import { AVAILABLE_PERMISSIONS, createUser, getRoles, UserSchema, type User } from '@/lib/services/users';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 export default function NewUserPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // Add state for password visibility
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<User>({
     resolver: zodResolver(UserSchema),
     defaultValues: {
       permissions: [],
       isActive: true,
+      password: '',
+
     }
   });
+
+  const { data: roles = [] } = useQuery({
+    queryKey: ['roles'],
+    queryFn: getRoles
+  });
+
+  console.log("errors", errors);
+
+
 
   const selectedPermissions = watch('permissions');
 
   const onSubmit = async (data: User) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) throw new Error('Failed to create user');
+      const response = await createUser(data)
+      if (response) throw new Error(`Failed to create user : ${response?.message}`);
 
       toast.success('User created successfully');
       router.push('/dashboard/users');
     } catch (error) {
-      toast.error('Failed to create user');
+      console.log("err", error);
+
+      toast.error(` ${error?.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -69,8 +80,8 @@ export default function NewUserPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Name</label>
-                  <Input {...register('name')} disabled={isSubmitting} />
-                  {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                  <Input {...register('username')} disabled={isSubmitting} />
+                  {errors.username && <p className="text-sm text-red-500">{errors.username.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -78,6 +89,29 @@ export default function NewUserPage() {
                   <Input type="email" {...register('email')} disabled={isSubmitting} />
                   {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
                 </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Password</label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    {...register('password')}
+                    disabled={isSubmitting}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -87,9 +121,11 @@ export default function NewUserPage() {
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ADMIN">Administrator</SelectItem>
-                    <SelectItem value="MANAGER">Manager</SelectItem>
-                    <SelectItem value="USER">User</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role._id} value={role._id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {errors.role && <p className="text-sm text-red-500">{errors.role.message}</p>}
@@ -110,31 +146,35 @@ export default function NewUserPage() {
 
               <div className="space-y-4">
                 <label className="text-sm font-medium">Permissions</label>
-                {Object.entries(AVAILABLE_PERMISSIONS).map(([category, permissions]) => (
-                  <div key={category} className="space-y-2">
-                    <h4 className="text-sm font-medium capitalize">{category}</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {permissions.map((permission) => (
-                        <div key={permission} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={permission}
-                            checked={selectedPermissions?.includes(permission)}
-                            onCheckedChange={(checked) => 
-                              handlePermissionToggle(permission, checked as boolean)
-                            }
-                          />
-                          <label
-                            htmlFor={permission}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            {permission.split('.')[1].charAt(0).toUpperCase() + 
-                             permission.split('.')[1].slice(1)}
-                          </label>
+                <Accordion type="multiple">
+                  {Object.entries(AVAILABLE_PERMISSIONS).map(([category, permissions]) => (
+                    <AccordionItem key={category} value={category}>
+                      <AccordionTrigger className="text-sm font-medium capitalize">{category}</AccordionTrigger>
+                      <AccordionContent className="space-y-2 p-4">
+                        <div className="grid grid-cols-2 gap-2">
+                          {permissions.map((permission) => (
+                            <div key={permission} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={permission}
+                                checked={selectedPermissions?.includes(permission)}
+                                onCheckedChange={(checked) =>
+                                  handlePermissionToggle(permission, checked as boolean)
+                                }
+                              />
+                              <label
+                                htmlFor={permission}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                {permission.split('.')[1].charAt(0).toUpperCase() +
+                                  permission.split('.')[1].slice(1)}
+                              </label>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
                 {errors.permissions && (
                   <p className="text-sm text-red-500">{errors.permissions.message}</p>
                 )}
@@ -163,6 +203,6 @@ export default function NewUserPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </div >
   );
 }

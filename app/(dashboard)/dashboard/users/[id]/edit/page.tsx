@@ -1,19 +1,20 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { UserSchema, type User, AVAILABLE_PERMISSIONS, getUser } from '@/lib/services/users';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { AVAILABLE_PERMISSIONS, getRoles, getUser, UserSchema, type User } from '@/lib/services/users';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 export default function EditUserPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -22,6 +23,11 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
   const { data: user, isLoading } = useQuery({
     queryKey: ['user', params.id],
     queryFn: () => getUser(params.id)
+  });
+
+  const { data: roles = [] } = useQuery({
+    queryKey: ['roles'],
+    queryFn: getRoles
   });
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<User>({
@@ -75,8 +81,8 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Name</label>
-                  <Input {...register('name')} disabled={isSubmitting} />
-                  {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                  <Input {...register('username')} disabled={isSubmitting} />
+                  {errors.username && <p className="text-sm text-red-500">{errors.username.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -89,16 +95,18 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Role</label>
                 <Select
-                  defaultValue={user.role}
+                  defaultValue={user.role._id}
                   onValueChange={(value) => setValue('role', value as User['role'])}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select User Role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ADMIN">Administrator</SelectItem>
-                    <SelectItem value="MANAGER">Manager</SelectItem>
-                    <SelectItem value="USER">User</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role._id} value={role._id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {errors.role && <p className="text-sm text-red-500">{errors.role.message}</p>}
@@ -119,31 +127,35 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
 
               <div className="space-y-4">
                 <label className="text-sm font-medium">Permissions</label>
-                {Object.entries(AVAILABLE_PERMISSIONS).map(([category, permissions]) => (
-                  <div key={category} className="space-y-2">
-                    <h4 className="text-sm font-medium capitalize">{category}</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {permissions.map((permission) => (
-                        <div key={permission} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={permission}
-                            checked={selectedPermissions?.includes(permission)}
-                            onCheckedChange={(checked) => 
-                              handlePermissionToggle(permission, checked as boolean)
-                            }
-                          />
-                          <label
-                            htmlFor={permission}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            {permission.split('.')[1].charAt(0).toUpperCase() + 
-                             permission.split('.')[1].slice(1)}
-                          </label>
+                <Accordion type="multiple">
+                  {Object.entries(AVAILABLE_PERMISSIONS).map(([category, permissions]) => (
+                    <AccordionItem key={category} value={category}>
+                      <AccordionTrigger className="text-sm font-medium capitalize">{category}</AccordionTrigger>
+                      <AccordionContent className="space-y-2 p-4">
+                        <div className="grid grid-cols-2 gap-2">
+                          {permissions.map((permission) => (
+                            <div key={permission} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={permission}
+                                checked={selectedPermissions?.includes(permission)}
+                                onCheckedChange={(checked) =>
+                                  handlePermissionToggle(permission, checked as boolean)
+                                }
+                              />
+                              <label
+                                htmlFor={permission}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                {permission.split('.')[1].charAt(0).toUpperCase() +
+                                  permission.split('.')[1].slice(1)}
+                              </label>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
                 {errors.permissions && (
                   <p className="text-sm text-red-500">{errors.permissions.message}</p>
                 )}

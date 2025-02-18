@@ -1,7 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { User, Settings, Shield, LogOut, Sun, Moon } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -9,26 +8,23 @@ import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuPortal,
     DropdownMenuSeparator,
-    DropdownMenuTrigger,
     DropdownMenuSub,
     DropdownMenuSubContent,
     DropdownMenuSubTrigger,
-    DropdownMenuPortal,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { getUserFromLocalStorage, handleLogout } from '@/lib/utils';
+import { LogOut, Moon, Settings, Sun, User } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 
 export function UserMenu() {
     const router = useRouter();
     const { theme, setTheme } = useTheme();
 
-    const user = {
-        name: 'John Doe',
-        email: 'john@example.com',
-        initials: 'JD'
-    };
-
+    const { user } = getUserFromLocalStorage()
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -41,7 +37,7 @@ export function UserMenu() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.name}</p>
+                        <p className="text-sm font-medium leading-none">{user.username}</p>
                         <p className="text-xs leading-none text-muted-foreground">
                             {user.email}
                         </p>
@@ -85,7 +81,8 @@ export function UserMenu() {
                     </DropdownMenuSub>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/api/auth/logout')}>
+                {/* To add : /api/auth/logout' to save login adn logout time */}
+                <DropdownMenuItem onClick={() => handleLogout()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                 </DropdownMenuItem>

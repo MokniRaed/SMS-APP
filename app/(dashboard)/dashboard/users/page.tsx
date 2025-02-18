@@ -1,13 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUsers, deleteUser } from '@/lib/services/users';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, LayoutGrid, Table as TableIcon, Shield } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +10,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { CardSkeleton } from '@/components/ui/skeletons/card-skeleton';
+import { TableSkeleton } from '@/components/ui/skeletons/table-skeleton';
 import {
   Table,
   TableBody,
@@ -26,10 +23,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { deleteUser, getUsers } from '@/lib/services/users';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CardSkeleton } from '@/components/ui/skeletons/card-skeleton';
-import { TableSkeleton } from '@/components/ui/skeletons/table-skeleton';
+import { LayoutGrid, Pencil, Plus, Shield, Table as TableIcon, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 type ViewMode = 'grid' | 'table';
 
@@ -38,7 +38,7 @@ export default function UsersPage() {
   const queryClient = useQueryClient();
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
-  
+
   const { data: users, isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: getUsers
@@ -69,27 +69,27 @@ export default function UsersPage() {
 
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {users?.map((user) => (
-          <Card key={user.id} className="relative overflow-hidden">
+        {users?.map((user, index) => (
+          <Card key={index} className="relative overflow-hidden">
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-semibold text-lg">{user.name}</h3>
+                  <h3 className="font-semibold text-lg">{user.username}</h3>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
                 <Badge variant={user.isActive ? 'success' : 'secondary'}>
                   {user.isActive ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{user.role}</span>
+                  <span className="text-sm font-medium">{user.role?.name}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                {/* <p className="text-sm text-muted-foreground">
                   Last login: {user.lastLogin ? format(new Date(user.lastLogin), 'PPp') : 'Never'}
-                </p>
+                </p> */}
               </div>
 
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background to-transparent">
@@ -97,14 +97,14 @@ export default function UsersPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => router.push(`/dashboard/users/${user.id}/edit`)}
+                    onClick={() => router.push(`/dashboard/users/${user._id}/edit`)}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setDeleteUserId(user.id)}
+                    onClick={() => setDeleteUserId(user._id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -130,28 +130,28 @@ export default function UsersPage() {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Login</TableHead>
+              {/* <TableHead>Status</TableHead> */}
+              {/* <TableHead>Last Login</TableHead> */}
               <TableHead>Created At</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users?.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
+            {users?.map((user, index) => (
+              <TableRow key={index}>
+                <TableCell className="font-medium">{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{user.role}</Badge>
+                  <Badge variant="outline">{user.role?.name}</Badge>
                 </TableCell>
-                <TableCell>
+                {/* <TableCell>
                   <Badge variant={user.isActive ? 'success' : 'secondary'}>
                     {user.isActive ? 'Active' : 'Inactive'}
                   </Badge>
-                </TableCell>
-                <TableCell>
+                </TableCell> */}
+                {/* <TableCell>
                   {user.lastLogin ? format(new Date(user.lastLogin), 'PP') : 'Never'}
-                </TableCell>
+                </TableCell> */}
                 <TableCell>
                   {format(new Date(user.createdAt!), 'PP')}
                 </TableCell>
@@ -160,14 +160,14 @@ export default function UsersPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => router.push(`/dashboard/users/${user.id}/edit`)}
+                      onClick={() => router.push(`/dashboard/users/${user._id}/edit`)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setDeleteUserId(user.id)}
+                      onClick={() => setDeleteUserId(user._id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

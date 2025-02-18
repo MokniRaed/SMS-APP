@@ -1,13 +1,14 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { NotificationCenter } from '@/components/notifications/notification-center';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Home, Users, Briefcase, FileText, Settings, LogOut, Database, ShoppingCart } from 'lucide-react';
-import { NotificationCenter } from '@/components/notifications/notification-center';
 import { UserMenu } from '@/components/user-menu';
+import { handleLogout } from '@/lib/utils';
+import { Briefcase, Database, FileText, Home, LogOut, Menu, Settings, ShoppingCart, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -21,8 +22,8 @@ const navigation = [
 ];
 
 export default function DashboardLayout({
-                                          children,
-                                        }: {
+  children,
+}: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -39,91 +40,85 @@ export default function DashboardLayout({
   }
 
   return (
-      <div className="min-h-screen bg-background">
-        {/* Mobile navigation */}
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" className="lg:hidden fixed top-4 left-4 z-50">
-              <Menu className="h-6 w-6" />
+    <div className="min-h-screen bg-background">
+      {/* Mobile navigation */}
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" className="lg:hidden fixed top-4 left-4 z-50">
+            <Menu className="h-6 w-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-0">
+          <div className="flex h-16 shrink-0 items-center px-6">
+            <h1 className="text-2xl font-bold">Task Manager</h1>
+          </div>
+          <nav className="flex flex-col gap-1 p-4">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent ${pathname === item.href ? 'bg-accent' : ''
+                    }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  {item.name}
+                </Link>
+              );
+            })}
+            <Button variant="ghost" className="justify-start gap-2 mt-auto" onClick={() => handleLogout()}>
+              <LogOut className="h-5 w-5" />
+              Logout
             </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <div className="flex h-16 shrink-0 items-center px-6">
-              <h1 className="text-2xl font-bold">Task Manager</h1>
-            </div>
-            <nav className="flex flex-col gap-1 p-4">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                    <Link
-                        key={item.name}
-                        href={item.href}
-                        onClick={() => setIsOpen(false)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent ${
-                            pathname === item.href ? 'bg-accent' : ''
-                        }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                      {item.name}
-                    </Link>
-                );
-              })}
-              <Button variant="ghost" className="justify-start gap-2 mt-auto" asChild>
-                <Link href="/api/auth/logout">
-                  <LogOut className="h-5 w-5" />
-                  Logout
-                </Link>
-              </Button>
-            </nav>
-          </SheetContent>
-        </Sheet>
+          </nav>
+        </SheetContent>
+      </Sheet>
 
-        {/* Desktop navigation */}
-        <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-          <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r px-6 py-4">
-            <div className="flex h-16 shrink-0 items-center">
-              <h1 className="text-2xl font-bold">Task Manager</h1>
-            </div>
-            <nav className="flex flex-1 flex-col gap-1">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                    <Link
-                        key={item.name}
-                        href={item.href}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent ${
-                            pathname === item.href ? 'bg-accent' : ''
-                        }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                      {item.name}
-                    </Link>
-                );
-              })}
-              <Button variant="ghost" className="justify-start gap-2 mt-auto" asChild>
-                <Link href="/api/auth/logout">
-                  <LogOut className="h-5 w-5" />
-                  Logout
-                </Link>
-              </Button>
-            </nav>
+      {/* Desktop navigation */}
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r px-6 py-4">
+          <div className="flex h-16 shrink-0 items-center">
+            <h1 className="text-2xl font-bold">Task Manager</h1>
           </div>
-        </div>
-
-        {/* Main content */}
-        <div className="lg:pl-64">
-          {/* Top bar */}
-          <div className="fixed top-0 right-0 left-0 lg:left-64 h-16 border-b bg-background z-40">
-            <div className="flex items-center justify-end h-full px-4 space-x-4">
-              <NotificationCenter />
-              <UserMenu />
-            </div>
-          </div>
-
-          <main className="pt-16">
-            <div className="px-4 sm:px-6 lg:px-8 py-8">{children}</div>
-          </main>
+          <nav className="flex flex-1 flex-col gap-1">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent ${pathname === item.href ? 'bg-accent' : ''
+                    }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  {item.name}
+                </Link>
+              );
+            })}
+            <Button variant="ghost" className="justify-start gap-2 mt-auto" onClick={() => handleLogout()}>
+              <LogOut className="h-5 w-5" />
+              Logout
+            </Button>
+          </nav>
         </div>
       </div>
+
+      {/* Main content */}
+      <div className="lg:pl-64">
+        {/* Top bar */}
+        <div className="fixed top-0 right-0 left-0 lg:left-64 h-16 border-b bg-background z-40">
+          <div className="flex items-center justify-end h-full px-4 space-x-4">
+            <NotificationCenter />
+            <UserMenu />
+          </div>
+        </div>
+
+        <main className="pt-16">
+          <div className="px-4 sm:px-6 lg:px-8 py-8">{children}</div>
+        </main>
+      </div>
+    </div>
   );
 }

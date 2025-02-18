@@ -5,9 +5,10 @@ import { z } from 'zod';
 
 export const UserSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(1, 'Name is required'),
+  username: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  role: z.enum(['ADMIN', 'MANAGER', 'USER']),
+  password: z.string().min(8, 'Invalid password, 8 caractére at least'),
+  role: z.string(),
   permissions: z.array(z.string()),
   isActive: z.boolean(),
   lastLogin: z.string().optional(),
@@ -87,7 +88,7 @@ export const AVAILABLE_PERMISSIONS = {
 
 export async function getUsers(): Promise<User[]> {
   try {
-    const response = await api.get('/api/users');
+    const response = await api.get('/users');
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for users');
@@ -116,25 +117,48 @@ export async function getUser(id: string): Promise<User> {
     return user;
   }
 }
+export async function getUserProfile(id: string): Promise<User> {
+  try {
+    const response = await api.get(`/users/profile/${id}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for user');
+    const user = mockUsers.find(u => u.id === id);
+    if (!user) throw new Error('User not found');
+    return user;
+  }
+}
+
+export async function updateUserPassword(id: string, data: any): Promise<User> {
+  try {
+    const response = await api.post(`/users/profile/password/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.log("error", error);
+    return error.response.data
+  }
+}
 
 export async function createUser(user: Omit<User, 'id'>): Promise<User> {
   try {
-    const response = await api.post('/api/users', user);
+    const response = await api.post('/users', user);
     return response.data;
   } catch (error) {
-    console.warn('Falling back to mock data for create user');
-    return {
-      ...user,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    console.log("error", error);
+    return error.response.data
+    // console.warn('Falling back to mock data for create user');
+    // return {
+    //   ...user,
+    //   id: Math.random().toString(36).substr(2, 9),
+    //   createdAt: new Date().toISOString(),
+    //   updatedAt: new Date().toISOString()
+    // };
   }
 }
 
 export async function updateUser(id: string, user: Partial<User>): Promise<User> {
   try {
-    const response = await api.patch(`/api/users/${id}`, user);
+    const response = await api.patch(`/users/${id}`, user);
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for update user');
@@ -149,9 +173,19 @@ export async function updateUser(id: string, user: Partial<User>): Promise<User>
 
 export async function deleteUser(id: string): Promise<void> {
   try {
-    await api.delete(`/api/users/${id}`);
+    await api.delete(`/users/${id}`);
   } catch (error) {
     console.warn('Falling back to mock data for delete user');
     return Promise.resolve();
+  }
+}
+
+export async function getRoles(): Promise<User[]> {
+  try {
+    const response = await api.get('/users/roles');
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for users');
+    return mockUsers;
   }
 }

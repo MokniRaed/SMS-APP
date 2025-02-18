@@ -32,6 +32,7 @@ export async function getUser(req?: NextRequest) {
   if (!token) return null;
 
   const payload = await verifyToken(token);
+
   return payload;
 }
 

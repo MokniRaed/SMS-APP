@@ -6,7 +6,7 @@ export const OrderLineSchema = z.object({
   quantite_cmd: z.number().min(1, 'Quantity must be at least 1'),
   quantite_valid: z.number().optional(),
   quantite_confr: z.number().optional(),
-  statut_art_cmd: z.enum(['PENDING', 'VALIDATED', 'CONFIRMED', 'CANCELLED']),
+  statut_art_cmd: z.string(),
   notes_cmd: z.string().optional(),
 });
 
@@ -14,7 +14,7 @@ export const OrderSchema = z.object({
   date_cmd: z.string().min(1, 'Date is required'),
   id_client: z.string().min(1, 'Client is required'),
   id_collaborateur: z.string().min(1, 'Collaborator is required'),
-  statut_cmd: z.enum(['DRAFT', 'VALIDATION', 'VALIDATED', 'CONFIRMED', 'DELIVERED', 'CANCELLED']),
+  statut_cmd: z.string(),
   date_livraison: z.string().optional(),
   notes_cmd: z.string().optional(),
   articles: z.array(OrderLineSchema).min(1, 'At least one article is required'),
@@ -82,6 +82,26 @@ export async function getLineCommandsByOrder(id: string): Promise<OrderLine[]> {
 
   }
 }
+export async function getAllStatusArtCmd(): Promise<any[]> {
+  try {
+    const response = await api.get(`/orders/statutartcmds`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for article command status');
+
+  }
+}
+
+export async function getAllStatusCmd(): Promise<any[]> {
+  try {
+    const response = await api.get(`/orders/statutcmds`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for article command status');
+
+  }
+}
+
 
 export async function getOrder(id: string): Promise<Order> {
   try {

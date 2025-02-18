@@ -1,20 +1,20 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { TaskSchema, type Task, taskTypes, taskStatuses, collaborators, getTask } from '@/lib/services/tasks';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { getClientContacts } from '@/lib/services/clients';
 import { getProjects } from '@/lib/services/projects';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { collaborators, getTask, TaskSchema, taskStatuses, taskTypes, type Task } from '@/lib/services/tasks';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 export default function EditTaskPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -39,6 +39,8 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
     resolver: zodResolver(TaskSchema),
     values: task
   });
+
+
 
   const onSubmit = async (data: Task) => {
     setIsSubmitting(true);
@@ -80,7 +82,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Task Type</label>
-                <Select 
+                <Select
                   defaultValue={task.type_tache}
                   onValueChange={(value) => setValue('type_tache', value)}
                 >
@@ -100,7 +102,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Client</label>
-                <Select 
+                <Select
                   defaultValue={task.id_client}
                   onValueChange={(value) => setValue('id_client', value)}
                 >
@@ -122,7 +124,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Project</label>
-                <Select 
+                <Select
                   defaultValue={task.id_projet}
                   onValueChange={(value) => setValue('id_projet', value)}
                 >
@@ -142,7 +144,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Collaborator</label>
-                <Select 
+                <Select
                   defaultValue={task.id_collaborateur}
                   onValueChange={(value) => setValue('id_collaborateur', value)}
                 >
@@ -195,7 +197,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
-              <Select 
+              <Select
                 defaultValue={task.statut_tache}
                 onValueChange={(value) => setValue('statut_tache', value)}
               >

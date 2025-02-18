@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { deleteProject, getProjects, updateProject } from '@/lib/services/projects';
+import { deleteProject, getProjects, Project, updateProject } from '@/lib/services/projects';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowUpDown, Calendar, LayoutGrid, MapPin, Pencil, Plus, Table as TableIcon, Target, Trash2 } from 'lucide-react';
@@ -40,7 +40,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 type ViewMode = 'grid' | 'table';
-type SortField = 'Type_projet' | 'Produit_cible' | 'Statut_projet' | 'Periode_Date_debut';
+type SortField = 'type_projet' | 'produit_cible' | 'statut_projet' | 'periode_date_debut';
 type SortOrder = 'asc' | 'desc';
 
 export default function ProjectsPage() {
@@ -48,7 +48,7 @@ export default function ProjectsPage() {
   const queryClient = useQueryClient();
   const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [sortField, setSortField] = useState<SortField>('Periode_Date_debut');
+  const [sortField, setSortField] = useState<SortField>('periode_date_debut');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
 
@@ -56,6 +56,11 @@ export default function ProjectsPage() {
     queryKey: ['projects'],
     queryFn: getProjects
   });
+
+  // const { data: typeProject = [], isLoading } = useQuery({
+  //   queryKey: ['typeProject'],
+  //   queryFn: getProjects
+  // });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Project> }) => {
@@ -94,7 +99,7 @@ export default function ProjectsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedProjects(projects.map(project => project.Id_projet));
+      setSelectedProjects(projects.map(project => project._id));
     } else {
       setSelectedProjects([]);
     }
@@ -114,7 +119,7 @@ export default function ProjectsPage() {
         selectedProjects.map(projectId =>
           updateMutation.mutateAsync({
             id: projectId,
-            data: { Statut_projet: status }
+            data: { statut_projet: status }
           })
         )
       );
@@ -138,21 +143,22 @@ export default function ProjectsPage() {
   const sortedProjects = [...projects].sort((a, b) => {
     let comparison = 0;
     switch (sortField) {
-      case 'Type_projet':
-        comparison = a.Type_projet.localeCompare(b.Type_projet);
+      case 'type_projet':
+        comparison = a.type_projet.localeCompare(b.type_projet);
         break;
-      case 'Produit_cible':
-        comparison = (a.Produit_cible || '').localeCompare(b.Produit_cible || '');
+      case 'produit_cible':
+        comparison = (a.produit_cible || '').localeCompare(b.produit_cible.nom_produit_cible || '');
         break;
-      case 'Statut_projet':
-        comparison = a.Statut_projet.localeCompare(b.Statut_projet);
+      case 'statut_projet':
+        comparison = a.statut_projet.localeCompare(b.statut_projet.nom_statut_prj);
         break;
-      case 'Periode_Date_debut':
-        comparison = new Date(a.Periode_Date_debut).getTime() - new Date(b.Periode_Date_debut).getTime();
+      case 'periode_date_debut':
+        comparison = new Date(a.periode_date_debut).getTime() - new Date(b.periode_date_debut).getTime();
         break;
     }
     return sortOrder === 'asc' ? comparison : -comparison;
   });
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -240,30 +246,30 @@ export default function ProjectsPage() {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {sortedProjects.map((project) => (
-          <Card key={project.Id_projet} className="relative overflow-hidden">
+          <Card key={project._id} className="relative overflow-hidden">
             <CardContent className="p-6">
               <div className="absolute top-4 left-4">
                 <Checkbox
-                  checked={selectedProjects.includes(project.Id_projet)}
-                  onCheckedChange={(checked) => handleSelectProject(project.Id_projet, checked as boolean)}
+                  checked={selectedProjects.includes(project._id)}
+                  onCheckedChange={(checked) => handleSelectProject(project._id, checked as boolean)}
                 />
               </div>
               <div className="flex justify-between items-start mb-4 pl-8">
-                <Badge className={getProjectTypeColor(project.Type_projet)}>
-                  {project.Type_projet}
+                <Badge className={getProjectTypeColor(project.type_projet.nom_type_prj)}>
+                  {project.type_projet.nom_type_prj}
                 </Badge>
-                <Badge className={getStatusColor(project.Statut_projet)}>
-                  {project.Statut_projet}
+                <Badge className={getStatusColor(project.statut_projet.nom_statut_prj)}>
+                  {project.statut_projet.nom_statut_prj}
                 </Badge>
               </div>
 
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-lg line-clamp-1">
-                    {project.Produit_cible}
+                    {project.produ}
                   </h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {project.Description_projet}
+                    {project.description_projet}
                   </p>
                 </div>
 
@@ -271,21 +277,21 @@ export default function ProjectsPage() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Target className="h-4 w-4" />
-                      <span>Revenue: ${project.Objectif_CA?.toLocaleString()}</span>
+                      <span>Revenue: ${project.objectif_ca?.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin className="h-4 w-4" />
-                      <span>{project.Zone_cible || 'No zone specified'}</span>
+                      <span>{project.zone_cible.sous_Zone_cible || 'No zone specified'}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />
-                      <span>{format(new Date(project.Periode_Date_debut), 'MMM d')}</span>
+                      <span>{format(new Date(project.periode_date_debut), 'MMM d')}</span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />
-                      <span>{format(new Date(project.Periode_Date_fin), 'MMM d')}</span>
+                      <span>{format(new Date(project.periode_date_fin), 'MMM d')}</span>
                     </div>
                   </div>
                 </div>
@@ -296,14 +302,14 @@ export default function ProjectsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => router.push(`/dashboard/projects/${project.Id_projet}/edit`)}
+                    onClick={() => router.push(`/dashboard/projects/${project._id}/edit`)}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setDeleteProjectId(project.Id_projet)}
+                    onClick={() => setDeleteProjectId(project._id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -332,11 +338,11 @@ export default function ProjectsPage() {
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead>{renderSortButton('Type_projet', 'Type')}</TableHead>
-              <TableHead>{renderSortButton('Produit_cible', 'Product')}</TableHead>
-              <TableHead>{renderSortButton('Statut_projet', 'Status')}</TableHead>
+              <TableHead>{renderSortButton('type_projet', 'Type')}</TableHead>
+              <TableHead>{renderSortButton('produit_cible', 'Product')}</TableHead>
+              <TableHead>{renderSortButton('statut_projet', 'Status')}</TableHead>
               <TableHead>Zone</TableHead>
-              <TableHead>{renderSortButton('Periode_Date_debut', 'Start Date')}</TableHead>
+              <TableHead>{renderSortButton('periode_date_debut', 'Start Date')}</TableHead>
               <TableHead>End Date</TableHead>
               <TableHead>Revenue Target</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -344,48 +350,48 @@ export default function ProjectsPage() {
           </TableHeader>
           <TableBody>
             {sortedProjects.map((project) => (
-              <TableRow key={project.Id_projet}>
+              <TableRow key={project._id}>
                 <TableCell>
                   <Checkbox
-                    checked={selectedProjects.includes(project.Id_projet)}
-                    onCheckedChange={(checked) => handleSelectProject(project.Id_projet, checked as boolean)}
+                    checked={selectedProjects.includes(project._id)}
+                    onCheckedChange={(checked) => handleSelectProject(project._id, checked as boolean)}
                   />
                 </TableCell>
                 <TableCell>
-                  <Badge className={getProjectTypeColor(project.Type_projet)}>
-                    {project.Type_projet}
+                  <Badge className={getProjectTypeColor(project.type_projet.nom_type_prj)}>
+                    {project.type_projet.nom_type_prj}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
-                    <div className="font-medium">{project.Produit_cible}</div>
+                    <div className="font-medium">{project.nom_projet}</div>
                     <div className="text-sm text-muted-foreground line-clamp-1">
-                      {project.Description_projet}
+                      {project.description_projet}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(project.Statut_projet)}>
-                    {project.Statut_projet}
+                  <Badge className={getStatusColor(project.statut_projet.nom_statut_prj.nom_produit_cible)}>
+                    {project.statut_projet.nom_statut_prj}
                   </Badge>
                 </TableCell>
-                <TableCell>{project.Zone_cible || '-'}</TableCell>
-                <TableCell>{format(new Date(project.Periode_Date_debut), 'MMM d, yyyy')}</TableCell>
-                <TableCell>{format(new Date(project.Periode_Date_fin), 'MMM d, yyyy')}</TableCell>
-                <TableCell>${project.Objectif_CA?.toLocaleString() || '-'}</TableCell>
+                <TableCell>{project.zone_cible.sous_Zone_cible || '-'}</TableCell>
+                <TableCell>{format(new Date(project.periode_date_debut), 'MMM d, yyyy')}</TableCell>
+                <TableCell>{format(new Date(project.periode_date_fin), 'MMM d, yyyy')}</TableCell>
+                <TableCell>${project.objectif_ca?.toLocaleString() || '-'}</TableCell>
                 <TableCell>
                   <div className="flex justify-end space-x-2">
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => router.push(`/dashboard/projects/${project.Id_projet}/edit`)}
+                      onClick={() => router.push(`/dashboard/projects/${project._id}/edit`)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setDeleteProjectId(project.Id_projet)}
+                      onClick={() => setDeleteProjectId(project._id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

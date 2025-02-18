@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { login } from '@/lib/services/auth';
 import { Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -27,8 +26,6 @@ export default function LoginPage() {
         password: formData.get('password') as string,
       });
 
-      console.log("user", user)
-
       // Store user data in localStorage for client-side access
       localStorage.setItem('user', JSON.stringify(user));
 
@@ -46,9 +43,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>Enter your credentials to access your account</CardDescription>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-semibold text-gray-800">Login</CardTitle>
+          <CardDescription className="text-sm text-gray-500 mt-1">
+            Enter your credentials to access your account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
@@ -84,12 +83,12 @@ export default function LoginPage() {
                 'Login'
               )}
             </Button>
-            <p className="text-center text-sm text-gray-600">
+            {/* <p className="text-center text-sm text-gray-600">
               Don't have an account?{' '}
               <Link href="/signup" className="text-primary hover:underline">
                 Sign up
               </Link>
-            </p>
+            </p> */}
           </form>
         </CardContent>
       </Card>

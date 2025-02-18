@@ -28,14 +28,14 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { getArticles } from '@/lib/services/articles';
 import { getClientContacts } from '@/lib/services/clients';
-import { getLineCommandsByOrder, getOrder, OrderSchema, updateOrder, type Order } from '@/lib/services/orders';
+import { getAllStatusArtCmd, getAllStatusCmd, getLineCommandsByOrder, getOrder, OrderSchema, updateOrder, type Order } from '@/lib/services/orders';
 import { getUsersByRole } from '@/lib/services/users';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronsUpDown, Loader2, Minus, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -48,10 +48,27 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
     const [open, setOpen] = useState(false);
     const [quantity, setQuantity] = useState(1);
 
+
     const { data: order, isLoading: orderLoading } = useQuery({
         queryKey: ['order', params.id],
         queryFn: () => getOrder(params.id)
     });
+    const { data: statusArtCmd = [] } = useQuery({
+        queryKey: ['statusArtCmd'],
+        queryFn: getAllStatusArtCmd
+    });
+
+    const statusMapArtCmd = statusArtCmd.reduce((acc, status) => ({
+        ...acc,
+        [status._id]: status.description,
+        [status.value]: status._id
+    }), {});
+
+    const { data: statutcmds, isLoading: statutcmdsLoading } = useQuery({
+        queryKey: ['statutartcmds', params.id],
+        queryFn: getAllStatusCmd
+    });
+
 
     const { data: cmdLines = [], isLoading: cmdLinesLoading } = useQuery({
         queryKey: ['cmdLines', params.id],
@@ -85,7 +102,25 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         }
     });
 
+    console.log("errors", errors);
+
+
     const watchArticles = watch('articles') || [];
+    console.log("watchArticles", watchArticles);
+    console.log("order", order);
+
+    useEffect(() => {
+        if (order && cmdLines.length > 0 && statusArtCmd.length > 0) {
+            const normalizedCmdLines = cmdLines.map(line => ({
+                ...line,
+                id_article: line.id_article._id,
+                statut_art_cmd: line.statut_art_cmd._id
+            }));
+
+            setValue('articles', normalizedCmdLines);
+            setValue('statut_cmd', order.statut_cmd._id);
+        }
+    }, [order, cmdLines, statusArtCmd, setValue]);
 
     const handleQuantityChange = (index: number, change: number, field: 'quantite_cmd' | 'quantite_valid' | 'quantite_confr') => {
         const currentArticles = [...watchArticles];
@@ -94,11 +129,10 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
 
         // Apply validation rules based on user role and field
         if (userRole === 'RESPONSABLE' && field === 'quantite_valid') {
-            // Responsable can set validated quantity
             currentArticles[index] = {
                 ...currentArticles[index],
                 quantite_valid: newQuantity,
-                statut_art_cmd: '67b166f9d3246eb50d70e09d' // VALIDATED
+                statut_art_cmd: statusMapArtCmd['VALIDATED'] // Use status ID from map
             };
         } else if (['CLIENT', 'COLLABORATEUR'].includes(userRole) && field === 'quantite_confr') {
             // Client/Collaborateur can set confirmed quantity based on validated quantity
@@ -114,6 +148,8 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                 return;
             }
         }
+        console.log("currentArticles", currentArticles);
+
 
         setValue('articles', currentArticles);
     };
@@ -124,13 +160,14 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
             id_article: article._id,
             quantite_cmd: quantity,
             notes_cmd: '',
-            statut_art_cmd: '67b1670ed3246eb50d70e09c' // PENDING
+            statut_art_cmd: statusMapArtCmd['PENDING'], // Use status ID from map
+            quantite_valid: 0,
+            quantite_confr: 0
         });
         setValue('articles', currentArticles);
         setQuantity(1);
         setOpen(false);
     };
-
     const handleRemoveArticle = (index: number) => {
         const currentArticles = [...watchArticles];
         currentArticles.splice(index, 1);
@@ -138,6 +175,8 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
     };
 
     const onSubmit = async (data: Order) => {
+        console.log("data", data);
+
         setIsSubmitting(true);
         try {
             // Validate quantities based on user role
@@ -172,6 +211,11 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
     if (orderLoading || cmdLinesLoading) return <div>Loading...</div>;
     if (!order) return <div>Order not found</div>;
 
+    const statusMap = {
+        '67b166f9d3246eb50d70e09d': 'VALIDATED',
+        '67b166fed3246eb50d70e09e': 'CONFIRMED',
+        '67b1670ed3246eb50d70e09c': 'PENDING'
+    };
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'PENDING':
@@ -187,6 +231,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         }
     };
 
+
     // Determine if user can edit based on role and order status
     const canEdit = () => {
         if (userRole === 'RESPONSABLE') {
@@ -197,6 +242,10 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         }
         return false;
     };
+
+    console.log("order.id_collaborateur._id", order.id_collaborateur._id);
+
+
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -372,110 +421,117 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {cmdLines.map((line, index) => (
-                                            <TableRow key={index}>
-                                                <TableCell>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">{line.id_article.art_designation}</span>
-                                                        <span className="text-sm text-muted-foreground">
-                                                            {line.id_article.art_unite_vente}
+                                        {watchArticles.map((line, index) => {
+                                            const article = articles.find(a => a._id === line.id_article);
+                                            const status = line.statut_art_cmd === '67b166f9d3246eb50d70e09d' ? 'VALIDATED' :
+                                                line.statut_art_cmd === '67b166fed3246eb50d70e09e' ? 'CONFIRMED' : 'PENDING';
+
+                                            return (
+                                                <TableRow key={index}>
+                                                    <TableCell>
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">
+                                                                {articles.find(a => a._id === line.id_article)?.art_designation || 'Unknown Article'}
+                                                            </span>                                                           <span className="text-sm text-muted-foreground">
+                                                                {articles.find(a => a._id === line.id_article)?.art_unite_vente || ''}
+                                                            </span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className="w-12 text-center">
+                                                            {line.quantite_cmd}
                                                         </span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className="w-12 text-center">
-                                                        {line.quantite_cmd}
-                                                    </span>
-                                                </TableCell>
-                                                {userRole === 'RESPONSABLE' && (
-                                                    <TableCell>
-                                                        <div className="flex items-center space-x-2">
-                                                            {canEdit() && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    onClick={() => handleQuantityChange(index, -1, 'quantite_valid')}
-                                                                    disabled={isSubmitting}
-                                                                >
-                                                                    <Minus className="h-4 w-4" />
-                                                                </Button>
-                                                            )}
-                                                            <span className="w-12 text-center">
-                                                                {line.quantite_valid || 0}
-                                                            </span>
-                                                            {canEdit() && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    onClick={() => handleQuantityChange(index, 1, 'quantite_valid')}
-                                                                    disabled={isSubmitting}
-                                                                >
-                                                                    <Plus className="h-4 w-4" />
-                                                                </Button>
-                                                            )}
-                                                        </div>
                                                     </TableCell>
-                                                )}
-                                                {['CLIENT', 'COLLABORATEUR'].includes(userRole) && (
+                                                    {userRole === 'RESPONSABLE' && (
+                                                        <TableCell>
+                                                            <div className="flex items-center space-x-2">
+                                                                {canEdit() && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        onClick={() => handleQuantityChange(index, -1, 'quantite_valid')}
+                                                                        disabled={isSubmitting}
+                                                                    >
+                                                                        <Minus className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                                <span className="w-12 text-center">
+                                                                    {line.quantite_valid || 0}
+                                                                </span>
+                                                                {canEdit() && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        onClick={() => handleQuantityChange(index, 1, 'quantite_valid')}
+                                                                        disabled={isSubmitting}
+                                                                    >
+                                                                        <Plus className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                    )}
+                                                    {['CLIENT', 'COLLABORATEUR'].includes(userRole) && (
+                                                        <TableCell>
+                                                            <div className="flex items-center space-x-2">
+                                                                {canEdit() && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        onClick={() => handleQuantityChange(index, -1, 'quantite_confr')}
+                                                                        disabled={isSubmitting}
+                                                                    >
+                                                                        <Minus className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                                <span className="w-12 text-center">
+                                                                    {line.quantite_confr || 0}
+                                                                </span>
+                                                                {canEdit() && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        onClick={() => handleQuantityChange(index, 1, 'quantite_confr')}
+                                                                        disabled={isSubmitting}
+                                                                    >
+                                                                        <Plus className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                    )}
                                                     <TableCell>
-                                                        <div className="flex items-center space-x-2">
-                                                            {canEdit() && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    onClick={() => handleQuantityChange(index, -1, 'quantite_confr')}
-                                                                    disabled={isSubmitting}
-                                                                >
-                                                                    <Minus className="h-4 w-4" />
-                                                                </Button>
-                                                            )}
-                                                            <span className="w-12 text-center">
-                                                                {line.quantite_confr || 0}
-                                                            </span>
-                                                            {canEdit() && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    onClick={() => handleQuantityChange(index, 1, 'quantite_confr')}
-                                                                    disabled={isSubmitting}
-                                                                >
-                                                                    <Plus className="h-4 w-4" />
-                                                                </Button>
-                                                            )}
-                                                        </div>
+                                                        <Input
+                                                            defaultValue={line.notes_cmd}
+                                                            {...register(`articles.${index}.notes_cmd`)}
+                                                            disabled={!canEdit() || isSubmitting}
+                                                        />
                                                     </TableCell>
-                                                )}
-                                                <TableCell>
-                                                    <Input
-                                                        defaultValue={line.notes_cmd}
-                                                        {...register(`articles.${index}.notes_cmd`)}
-                                                        disabled={!canEdit() || isSubmitting}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge className={getStatusColor(line.statut_art_cmd.description)}>
-                                                        {line.statut_art_cmd.description}
-                                                    </Badge>
-                                                </TableCell>
-                                                {canEdit() && (
                                                     <TableCell>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleRemoveArticle(index)}
-                                                            disabled={isSubmitting}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
+                                                        <Badge className={getStatusColor(statusMapArtCmd[line.statut_art_cmd] || 'PENDING')}>
+                                                            {statusArtCmd.find(s => s._id === line.statut_art_cmd)?.description || 'Unknown Status'}
+                                                        </Badge>
                                                     </TableCell>
-                                                )}
-                                            </TableRow>
-                                        ))}
+                                                    {canEdit() && (
+                                                        <TableCell>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleRemoveArticle(index)}
+                                                                disabled={isSubmitting}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    )}
+                                                </TableRow>
+                                            )
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>
