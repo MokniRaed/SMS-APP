@@ -58,14 +58,21 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         queryFn: getAllStatusArtCmd
     });
 
+    console.log("statusArtCmd", statusArtCmd);
+
     const statusMapArtCmd = statusArtCmd.reduce((acc, status) => ({
         ...acc,
         [status._id]: status.description,
         [status.value]: status._id // Make sure status.value matches what you use (e.g., 'VALIDATION')
     }), {});
 
-    const { data: statutcmds, isLoading: statutcmdsLoading } = useQuery({
+    const { data: statutartcmds, isLoading: statutartcmdsLoading } = useQuery({
         queryKey: ['statutartcmds', params.id],
+        queryFn: getAllStatusArtCmd
+    });
+
+    const { data: statutcmds, isLoading: statutcmdsLoading } = useQuery({
+        queryKey: ['statutcmds', params.id],
         queryFn: getAllStatusCmd
     });
 
@@ -91,36 +98,45 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         queryFn: getArticles
     });
 
-    const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<Order>({
+    const { register, handleSubmit, formState: { isDirty, errors }, setValue, watch } = useForm<Order>({
         resolver: zodResolver(OrderSchema),
-        defaultValues: {
-            date_cmd: order?.date_cmd ? new Date(order.date_cmd).toISOString().split('T')[0] : undefined,
-            id_client: order?.id_client?._id,
-            id_collaborateur: order?.id_collaborateur?._id,
-            notes_cmd: order?.notes_cmd,
-            articles: cmdLines
+        values: {
+            ...order,
+            // Transform cmdLines into the articles structure
+            articles: cmdLines.map(line => ({
+                id_article: line.id_article?._id,
+                quantite_cmd: line.quantite_cmd,
+                notes_cmd: line.notes_cmd,
+                statut_art_cmd: line.statut_art_cmd?._id,
+                quantite_valid: line.quantite_valid,
+                quantite_confr: line.quantite_confr
+            }))
         }
     });
 
     console.log("errors", errors);
 
 
-    const watchArticles = watch('articles') || [];
-    console.log("watchArticles", watchArticles);
-    console.log("order", order);
-
     useEffect(() => {
-        if (order && cmdLines.length > 0 && statusArtCmd.length > 0) {
-            const normalizedCmdLines = cmdLines.map(line => ({
-                ...line,
-                id_article: line.id_article._id,
-                statut_art_cmd: line.statut_art_cmd._id
-            }));
-
-            setValue('articles', normalizedCmdLines);
-            setValue('statut_cmd', order.statut_cmd._id);
+        if (cmdLines.length > 0 && !isDirty) {
+            setValue('articles', cmdLines.map(line => ({
+                id_article: line.id_article?._id,
+                quantite_cmd: line.quantite_cmd,
+                notes_cmd: line.notes_cmd,
+                statut_art_cmd: line.statut_art_cmd?._id,
+                quantite_valid: line.quantite_valid,
+                quantite_confr: line.quantite_confr
+            })));
         }
-    }, [order, cmdLines, statusArtCmd, setValue]);
+    }, [cmdLines, setValue, isDirty]);
+
+
+
+    const watchArticles = watch('articles') || [];
+    const statut_cmd = watch('statut_cmd') || [];
+    console.log("statut_cmd (cmd)", statut_cmd);
+    console.log("watchArticles (cmd)", watchArticles);
+    console.log("cmdLines", cmdLines);
 
     const handleQuantityChange = (index: number, change: number, field: 'quantite_cmd' | 'quantite_valid' | 'quantite_confr') => {
         const currentArticles = [...watchArticles];
@@ -132,7 +148,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
             currentArticles[index] = {
                 ...currentArticles[index],
                 quantite_valid: newQuantity,
-                statut_art_cmd: statusMapArtCmd['VALIDATED'] // Use status ID from map
+                // statut_art_cmd: statusMapArtCmd['"67b1330031cfd7a92cb14c49"'] // Use status ID from map
             };
         } else if (['CLIENT', 'COLLABORATEUR'].includes(userRole) && field === 'quantite_confr') {
             // Client/Collaborateur can set confirmed quantity based on validated quantity
@@ -141,21 +157,22 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                 currentArticles[index] = {
                     ...currentArticles[index],
                     quantite_confr: newQuantity,
-                    statut_art_cmd: '67b166fed3246eb50d70e09e' // CONFIRMED
+                    statut_art_cmd: '67b1330031cfd7a92cb14c49' // CONFIRMED
                 };
             } else {
                 toast.error('Confirmed quantity cannot exceed validated quantity');
                 return;
             }
         }
-        console.log("currentArticles", currentArticles);
-
 
         setValue('articles', currentArticles);
     };
 
     const handleAddArticle = (article: any) => {
         const currentArticles = [...watchArticles];
+
+        console.log("currentArticles add", currentArticles);
+
         currentArticles.push({
             id_article: article._id,
             quantite_cmd: quantity,
@@ -236,7 +253,8 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
     // Determine if user can edit based on role and order status
     const canEdit = () => {
         if (userRole === 'RESPONSABLE') {
-            return ['VALIDATION', 'VALIDATED'].includes(order.statut_cmd.description);
+            return "67b164ea14c46c093c5f3f74" === order.statut_cmd;
+            // return ['VALIDATION', 'VALIDATED'].includes(order.statut_cmd.description);
         }
         if (['CLIENT', 'COLLABORATEUR'].includes(userRole)) {
             return order.statut_cmd.description === 'VALIDATED';
@@ -244,7 +262,6 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         return false;
     };
 
-    console.log("order.id_collaborateur._id", order.id_collaborateur._id);
 
 
 
@@ -260,7 +277,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Collaborator</label>
                                 <Select
-                                    defaultValue={order.id_collaborateur._id}
+                                    defaultValue={order.id_collaborateur}
                                     onValueChange={(value) => setValue('id_collaborateur', value)}
                                     disabled={!canEdit() || isSubmitting}
                                 >
@@ -283,7 +300,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Client</label>
                                 <Select
-                                    defaultValue={order.id_client._id}
+                                    defaultValue={order.id_client}
                                     onValueChange={(value) => setValue('id_client', value)}
                                     disabled={!canEdit() || isSubmitting}
                                 >
@@ -424,17 +441,17 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                     <TableBody>
                                         {watchArticles.map((line, index) => {
                                             const article = articles.find(a => a._id === line.id_article);
-                                            const status = line.statut_art_cmd === '67b166f9d3246eb50d70e09d' ? 'VALIDATED' :
-                                                line.statut_art_cmd === '67b166fed3246eb50d70e09e' ? 'CONFIRMED' : 'PENDING';
+                                            const status = statusArtCmd.find(s => s._id === line.statut_art_cmd)?.description;
 
                                             return (
                                                 <TableRow key={index}>
                                                     <TableCell>
                                                         <div className="flex flex-col">
                                                             <span className="font-medium">
-                                                                {articles.find(a => a._id === line.id_article)?.art_designation || 'Unknown Article'}
-                                                            </span>                                                           <span className="text-sm text-muted-foreground">
-                                                                {articles.find(a => a._id === line.id_article)?.art_unite_vente || ''}
+                                                                {article?.art_designation || 'Unknown Article'}
+                                                            </span>
+                                                            <span className="text-sm text-muted-foreground">
+                                                                {article?.art_unite_vente || ''}
                                                             </span>
                                                         </div>
                                                     </TableCell>
@@ -514,7 +531,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                                     </TableCell>
                                                     <TableCell>
                                                         <Badge className={getStatusColor(statusMapArtCmd[line.statut_art_cmd] || 'PENDING')}>
-                                                            {statusArtCmd.find(s => s._id === line.statut_art_cmd)?.description || 'Unknown Status'}
+                                                            {status || 'Unknown Status'}
                                                         </Badge>
                                                     </TableCell>
                                                     {canEdit() && (

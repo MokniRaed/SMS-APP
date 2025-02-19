@@ -133,7 +133,7 @@ export async function createOrder(order: Omit<Order, '_id'>): Promise<Order> {
 
 export async function updateOrder(id: string, order: Partial<Order>): Promise<Order> {
   try {
-    const response = await api.patch(`/api/orders/${id}`, order);
+    const response = await api.patch(`/orders/validate/${id}`, order);
     return response.data;
   } catch (error) {
     throw new Error('Failed to update order');
