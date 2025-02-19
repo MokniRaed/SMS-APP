@@ -61,7 +61,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
     const statusMapArtCmd = statusArtCmd.reduce((acc, status) => ({
         ...acc,
         [status._id]: status.description,
-        [status.value]: status._id
+        [status.value]: status._id // Make sure status.value matches what you use (e.g., 'VALIDATION')
     }), {});
 
     const { data: statutcmds, isLoading: statutcmdsLoading } = useQuery({
@@ -160,7 +160,8 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
             id_article: article._id,
             quantite_cmd: quantity,
             notes_cmd: '',
-            statut_art_cmd: statusMapArtCmd['PENDING'], // Use status ID from map
+            // Use 'VALIDATION' instead of 'PENDING' to match your status values
+            statut_art_cmd: statusMapArtCmd['VALIDATION'], // Correct status value
             quantite_valid: 0,
             quantite_confr: 0
         });

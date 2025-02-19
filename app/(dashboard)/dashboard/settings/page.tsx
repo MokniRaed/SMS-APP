@@ -1,14 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTheme } from 'next-themes';
-import { Moon, Sun, Bell, User, Lock, Shield, Plus, Pencil, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -17,6 +10,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from '@/components/ui/input';
 import {
     Table,
     TableBody,
@@ -25,136 +19,185 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getFonctions } from '@/lib/services/clients';
+import { getAllStatusArtCmd, getAllStatusCmd } from '@/lib/services/orders';
+import { createParameter, updateParameter } from '@/lib/services/parameters';
+import { getProjectsProductCible, getProjectsStatus, getProjectsTypes } from '@/lib/services/projects';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
-// Schema for parameter entries
 const ParameterSchema = z.object({
     id: z.string().optional(),
-    description: z.string().min(1, 'Description is required'),
+    description: z.string().min(1, 'Description is required')
+        .refine(value => !getCurrentData().some(p => p.description === value), {
+            message: 'This parameter already exists',
+        }),
 });
 
 type Parameter = z.infer<typeof ParameterSchema>;
 
-type ParameterCategory = 'project' | 'task' | 'client' | 'order';
-type ParameterType = 'type' | 'status' | 'priority' | 'category';
+type ParameterCategory = 'projects' | 'tasks' | 'clients' | 'orders';
+type ParameterType = 'type' | 'status' | 'priority' | 'function' | 'productCible';
 
-// Define the structure of our parameters state
+type ProjectType = {
+    _id: string;
+    nom_type_prj: string;
+};
+
+type ContactFunction = {
+    _id: string;
+    nom_fonc: string;
+};
+
+
 type ParametersState = {
     [K in ParameterCategory]: {
         [T in ParameterType]?: Parameter[];
     };
 };
 
-const initialParameters: ParametersState = {
-    project: {
-        type: [
-            { id: '1', description: 'Development' },
-            { id: '2', description: 'Research' },
-            { id: '3', description: 'Maintenance' }
-        ],
-        status: [
-            { id: '1', description: 'Planned' },
-            { id: '2', description: 'In Progress' },
-            { id: '3', description: 'Completed' }
-        ]
-    },
-    task: {
-        type: [
-            { id: '1', description: 'Bug Fix' },
-            { id: '2', description: 'Feature' },
-            { id: '3', description: 'Documentation' }
-        ],
-        priority: [
-            { id: '1', description: 'Low' },
-            { id: '2', description: 'Medium' },
-            { id: '3', description: 'High' }
-        ],
-        status: [
-            { id: '1', description: 'Open' },
-            { id: '2', description: 'In Progress' },
-            { id: '3', description: 'Completed' }
-        ]
-    },
-    client: {
-        category: [
-            { id: '1', description: 'Enterprise' },
-            { id: '2', description: 'SMB' },
-            { id: '3', description: 'Individual' }
-        ],
-        status: [
-            { id: '1', description: 'Active' },
-            { id: '2', description: 'Inactive' },
-            { id: '3', description: 'Pending' }
-        ]
-    },
-    order: {
-        type: [
-            { id: '1', description: 'Standard' },
-            { id: '2', description: 'Express' },
-            { id: '3', description: 'Bulk' }
-        ],
-        status: [
-            { id: '1', description: 'New' },
-            { id: '2', description: 'Processing' },
-            { id: '3', description: 'Shipped' }
-        ]
-    }
-};
-
 export default function SettingsPage() {
     const { theme, setTheme } = useTheme();
     const [pushNotifications, setPushNotifications] = useState(true);
+    const queryClient = useQueryClient();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<ParameterCategory>('project');
+    const [selectedCategory, setSelectedCategory] = useState<ParameterCategory>('projects');
     const [selectedType, setSelectedType] = useState<ParameterType>('type');
     const [isParameterDialogOpen, setIsParameterDialogOpen] = useState(false);
     const [editingParameter, setEditingParameter] = useState<Parameter | null>(null);
-    const [parameters, setParameters] = useState<ParametersState>(initialParameters);
 
     const { register, handleSubmit, formState: { errors }, reset } = useForm<Parameter>({
         resolver: zodResolver(ParameterSchema)
     });
 
+    // Order Data
+    const { data: statusCmd = [] } = useQuery({
+        queryKey: ['statusCmd'],
+        queryFn: getAllStatusCmd
+    });
+
+    const { data: statusArtCmd = [] } = useQuery({
+        queryKey: ['statusArtCmd'],
+        queryFn: getAllStatusArtCmd
+    });
+
+    // Project Data
+    const { data: projectTypes = [] } = useQuery<ProjectType[]>({
+        queryKey: ['projectTypes'],
+        queryFn: getProjectsTypes
+    });
+
+    const { data: projectStatus = [] } = useQuery({
+        queryKey: ['projectStatus'],
+        queryFn: getProjectsStatus
+    });
+
+    const { data: projectProductCible = [] } = useQuery({
+        queryKey: ['projectProductCible'],
+        queryFn: getProjectsProductCible
+    });
+
+    const { data: contactFunction = [] } = useQuery<ContactFunction[]>({
+        queryKey: ['contactFunction'],
+        queryFn: getFonctions
+    });
+
+
+    const getFieldMapping = () => {
+        const mappings: Record<ParameterCategory, Record<ParameterType, string>> = {
+            projects: {
+                type: 'nom_type_prj',
+                status: 'nom_statut_prj',
+                productCible: 'nom_produit_cible',
+                priority: '',
+                function: ''
+            },
+            clients: {
+                type: '',
+                status: '',
+                priority: '',
+                function: 'nom_fonc',
+                productCible: ''
+            },
+            orders: {
+                type: 'description',
+                status: 'description',
+                priority: '',
+                function: '',
+                productCible: ''
+            },
+            tasks: {
+                type: '',
+                status: '',
+                priority: '',
+                function: '',
+                productCible: ''
+            }
+        };
+        return mappings[selectedCategory][selectedType];
+    };
+    console.log("contactFunction", contactFunction);
+
+
+    const getCurrentData = () => {
+        switch (selectedCategory) {
+            case 'projects':
+                switch (selectedType) {
+                    case 'type': return projectTypes.map((t: any) => ({ id: t._id, description: t.nom_type_prj }));
+                    case 'status': return projectStatus.map((s: any) => ({ id: s._id, description: s.nom_statut_prj }));
+                    case 'productCible': return projectProductCible.map((p: any) => ({ id: p._id, description: p.nom_produit_cible }));
+                    default: return [];
+                }
+            case 'clients':
+                switch (selectedType) {
+                    case 'function': return contactFunction.map((f: any) => ({ id: f._id, description: f.nom_fonc }));
+                    default: return [];
+                }
+            case 'orders':
+                switch (selectedType) {
+                    case 'status': return statusCmd.map((s: any) => ({ id: s._id, description: s.description }));
+                    case 'type': return statusArtCmd.map((a: any) => ({ id: a._id, description: a.description }));
+                    default: return [];
+                }
+            default: return [];
+        }
+    };
+
     const handleParameterSubmit = async (data: Parameter) => {
         setIsSubmitting(true);
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const fieldName = getFieldMapping();
+            const payload = { [fieldName]: data.description };
 
             if (editingParameter) {
-                // Update existing parameter
-                setParameters(prev => ({
-                    ...prev,
-                    [selectedCategory]: {
-                        ...prev[selectedCategory],
-                        [selectedType]: prev[selectedCategory][selectedType]?.map(p =>
-                            p.id === editingParameter.id ? { ...p, description: data.description } : p
-                        )
-                    }
-                }));
-                toast.success('Parameter updated successfully');
+                await updateParameter(
+                    selectedCategory,
+                    selectedType,
+                    editingParameter.id,
+                    payload
+                );
             } else {
-                // Add new parameter
-                setParameters(prev => ({
-                    ...prev,
-                    [selectedCategory]: {
-                        ...prev[selectedCategory],
-                        [selectedType]: [
-                            ...(prev[selectedCategory][selectedType] || []),
-                            { id: Math.random().toString(), description: data.description }
-                        ]
-                    }
-                }));
-                toast.success('Parameter added successfully');
+                await createParameter(
+                    selectedCategory,
+                    selectedType,
+                    payload
+                );
             }
 
+            queryClient.invalidateQueries([getQueryKey()]);
+            toast.success(`Parameter ${editingParameter ? 'updated' : 'added'} successfully`);
             setIsParameterDialogOpen(false);
             reset();
             setEditingParameter(null);
         } catch (error) {
-            toast.error('Failed to save parameter');
+            toast.error(`Failed to ${editingParameter ? 'update' : 'add'} parameter: ${error.message}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -162,63 +205,78 @@ export default function SettingsPage() {
 
     const handleDeleteParameter = async (id: string) => {
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            setParameters(prev => ({
-                ...prev,
-                [selectedCategory]: {
-                    ...prev[selectedCategory],
-                    [selectedType]: prev[selectedCategory][selectedType]?.filter(p => p.id !== id)
-                }
-            }));
-
+            await deleteParameter(
+                selectedCategory,
+                selectedType,
+                id
+            );
+            queryClient.invalidateQueries([getQueryKey()]);
             toast.success('Parameter deleted successfully');
         } catch (error) {
-            toast.error('Failed to delete parameter');
+            toast.error(`Failed to delete parameter: ${error.message}`);
         }
+    };
+
+    const getQueryKey = () => {
+        const keys: Record<ParameterCategory, Record<ParameterType, string>> = {
+            projects: {
+                type: 'projectTypes',
+                status: 'projectStatus',
+                productCible: 'projectProductCible',
+                priority: '',
+                function: ''
+            },
+            clients: {
+                type: '',
+                status: '',
+                priority: '',
+                function: 'contactFunction',
+                productCible: ''
+            },
+            orders: {
+                type: 'statusArtCmd',
+                status: 'statusCmd',
+                priority: '',
+                function: '',
+                productCible: ''
+            },
+            tasks: {
+                type: '',
+                status: '',
+                priority: '',
+                function: '',
+                productCible: ''
+            }
+        };
+        return keys[selectedCategory][selectedType];
     };
 
     const getCategoryTitle = (category: ParameterCategory) => {
         return category.charAt(0).toUpperCase() + category.slice(1);
     };
 
-    const getTypeTitle = (type: ParameterType) => {
-        return type.charAt(0).toUpperCase() + type.slice(1);
-    };
-
     const getAvailableTypes = (category: ParameterCategory): ParameterType[] => {
         switch (category) {
-            case 'project':
-                return ['type', 'status'];
-            case 'task':
-                return ['type', 'priority', 'status'];
-            case 'client':
-                return ['category', 'status'];
-            case 'order':
-                return ['type', 'status'];
-            default:
-                return ['type'];
+            case 'projects': return ['type', 'status', 'productCible'];
+            case 'clients': return ['function'];
+            case 'orders': return ['status', 'type'];
+            default: return [];
         }
     };
 
-    const getCurrentParameters = () => {
-        return parameters[selectedCategory][selectedType] || [];
-    };
 
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold">Settings</h1>
 
-            <Tabs defaultValue="project" className="space-y-6">
+            <Tabs defaultValue="projects" className="space-y-6">
                 <TabsList>
-                    <TabsTrigger value="project">Project Parameters</TabsTrigger>
-                    <TabsTrigger value="task">Task Parameters</TabsTrigger>
-                    <TabsTrigger value="client">Client Parameters</TabsTrigger>
-                    <TabsTrigger value="order">Order Parameters</TabsTrigger>
+                    <TabsTrigger value="projects">Project Parameters</TabsTrigger>
+                    <TabsTrigger value="clients">Client Parameters</TabsTrigger>
+                    <TabsTrigger value="orders">Order Parameters</TabsTrigger>
                 </TabsList>
 
-                {(['project', 'task', 'client', 'order'] as const).map((category) => (
+                {(['projects', 'clients', 'orders'] as const).map((category) => (
                     <TabsContent key={category} value={category}>
                         <Card>
                             <CardHeader>
@@ -242,7 +300,7 @@ export default function SettingsPage() {
                                     <TabsList className="mb-4">
                                         {getAvailableTypes(category).map((type) => (
                                             <TabsTrigger key={type} value={type}>
-                                                {getTypeTitle(type)}
+                                                {type.charAt(0).toUpperCase() + type.slice(1)}
                                             </TabsTrigger>
                                         ))}
                                     </TabsList>
@@ -256,33 +314,41 @@ export default function SettingsPage() {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {getCurrentParameters().map((param) => (
-                                                    <TableRow key={param.id}>
-                                                        <TableCell>{param.description}</TableCell>
-                                                        <TableCell>
-                                                            <div className="flex space-x-2">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => {
-                                                                        setSelectedCategory(category);
-                                                                        setEditingParameter(param);
-                                                                        setIsParameterDialogOpen(true);
-                                                                    }}
-                                                                >
-                                                                    <Pencil className="h-4 w-4" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => handleDeleteParameter(param.id)}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
+
+                                                {getCurrentData().length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2} className="text-center">
+                                                            No parameters found
                                                         </TableCell>
                                                     </TableRow>
-                                                ))}
+                                                ) : (
+                                                    getCurrentData().map((param) => (
+                                                        <TableRow key={param.id}>
+                                                            <TableCell>{param.description}</TableCell>
+                                                            <TableCell>
+                                                                <div className="flex space-x-2">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => {
+                                                                            setSelectedCategory(category);
+                                                                            setEditingParameter(param);
+                                                                            setIsParameterDialogOpen(true);
+                                                                        }}
+                                                                    >
+                                                                        <Pencil className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => handleDeleteParameter(param.id)}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>)
+                                                    ))}
                                             </TableBody>
                                         </Table>
                                     </div>
@@ -291,19 +357,16 @@ export default function SettingsPage() {
                         </Card>
                     </TabsContent>
                 ))}
-
-
             </Tabs>
 
-            {/* Parameter Dialog */}
             <Dialog open={isParameterDialogOpen} onOpenChange={setIsParameterDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>
-                            {editingParameter ? 'Edit' : 'Add'} {getCategoryTitle(selectedCategory)} {getTypeTitle(selectedType)}
+                            {editingParameter ? 'Edit' : 'Add'} {selectedCategory} {selectedType}
                         </DialogTitle>
                         <DialogDescription>
-                            {editingParameter ? 'Update the' : 'Enter a'} description for this parameter.
+                            {editingParameter ? 'Update' : 'Enter'} the description for this parameter.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit(handleParameterSubmit)} className="space-y-4">
@@ -339,6 +402,6 @@ export default function SettingsPage() {
                     </form>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }
