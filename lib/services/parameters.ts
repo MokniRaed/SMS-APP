@@ -1,25 +1,19 @@
+import api from "../axios";
+
 // lib/services/parameters.ts
 export const createParameter = async (category: string, type: string, data: any) => {
-    const response = await fetch(`/api/${category}/${type}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    return response.json();
+    const lowerType = type.toLocaleLowerCase()
+    const lowerCategory = category.toLocaleLowerCase()
+    const response = await api.post(`/${lowerCategory}/${lowerType}`, data);
+    return response.data;
 };
 
 export const updateParameter = async (category: string, type: string, id: string, data: any) => {
-    const response = await fetch(`/api/${category}/${type}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    return response.json();
+    const response = await api.patch(`/${category}/${type}/${id}`, data);
+    return response.data;
 };
 
 export const deleteParameter = async (category: string, type: string, id: string) => {
-    const response = await fetch(`/api/${category}/${type}/${id}`, {
-        method: 'DELETE',
-    });
-    return response.json();
+    const response = await api.delete(`/${category}/${type}/${id}`,);
+    return response.data;
 };

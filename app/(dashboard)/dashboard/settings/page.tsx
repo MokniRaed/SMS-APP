@@ -49,9 +49,9 @@ const CATEGORY_CONFIG = {
         title: 'Project Parameters',
         types: ['type', 'status', 'productCible'] as const,
         queryKeys: {
-            type: 'projectTypes',
-            status: 'projectStatus',
-            productCible: 'projectProductCible'
+            type: 'type',
+            status: 'status',
+            productCible: 'productcible'
         },
         fieldMappings: {
             type: 'nom_type_prj',
@@ -63,7 +63,7 @@ const CATEGORY_CONFIG = {
         title: 'Client Parameters',
         types: ['function'] as const,
         queryKeys: {
-            function: 'contactFunction'
+            function: 'function'
         },
         fieldMappings: {
             function: 'nom_fonc'
@@ -73,8 +73,8 @@ const CATEGORY_CONFIG = {
         title: 'Order Parameters',
         types: ['status', 'type'] as const,
         queryKeys: {
-            status: 'statusCmd',
-            type: 'statusArtCmd'
+            status: 'statutcmds',
+            type: 'statutartcmds'
         },
         fieldMappings: {
             status: 'description',
@@ -99,52 +99,46 @@ export default function SettingsPage() {
 
     // Queries
     const queries = {
-        statusCmd: useQuery({ queryKey: ['statusCmd'], queryFn: getAllStatusCmd }),
-        statusArtCmd: useQuery({ queryKey: ['statusArtCmd'], queryFn: getAllStatusArtCmd }),
-        projectTypes: useQuery<ProjectType[]>({ queryKey: ['projectTypes'], queryFn: getProjectsTypes }),
-        projectStatus: useQuery({ queryKey: ['projectStatus'], queryFn: getProjectsStatus }),
-        projectProductCible: useQuery({ queryKey: ['projectProductCible'], queryFn: getProjectsProductCible }),
-        contactFunction: useQuery<ContactFunction[]>({ queryKey: ['contactFunction'], queryFn: getFonctions })
+        statutcmds: useQuery({ queryKey: ['statutcmds'], queryFn: getAllStatusCmd }),
+        statutartcmds: useQuery({ queryKey: ['statutartcmds'], queryFn: getAllStatusArtCmd }),
+        type: useQuery<ProjectType[]>({ queryKey: ['type'], queryFn: getProjectsTypes }),
+        status: useQuery({ queryKey: ['status'], queryFn: getProjectsStatus }),
+        productcible: useQuery({ queryKey: ['productcible'], queryFn: getProjectsProductCible }),
+        function: useQuery<ContactFunction[]>({ queryKey: ['function'], queryFn: getFonctions })
     };
 
-    // Helpers
-    const getFieldMapping = () => {
-        return CATEGORY_CONFIG[selectedCategory].fieldMappings[selectedType as keyof typeof CATEGORY_CONFIG[typeof selectedCategory]['fieldMappings']];
-    };
-
+    // Get current data based on selected category and type
     const getCurrentData = () => {
-        const data = {
-            projects: {
-                type: queries.projectTypes.data?.map(t => ({ id: t._id, description: t.nom_type_prj })),
-                status: queries.projectStatus.data?.map(s => ({ id: s._id, description: s.nom_statut_prj })),
-                productCible: queries.projectProductCible.data?.map(p => ({ id: p._id, description: p.nom_produit_cible }))
-            },
-            clients: {
-                function: queries.contactFunction.data?.map(f => ({ id: f._id, description: f.nom_fonc }))
-            },
-            orders: {
-                status: queries.statusCmd.data?.map(s => ({ id: s._id, description: s.description })),
-                type: queries.statusArtCmd.data?.map(a => ({ id: a._id, description: a.description }))
-            }
-        };
+        const categoryConfig = CATEGORY_CONFIG[selectedCategory];
+        const queryData = queries[categoryConfig.queryKeys[selectedType as keyof typeof categoryConfig.queryKeys]].data;
+        const fieldMapping = categoryConfig.fieldMappings[selectedType];
 
-        return (data[selectedCategory] as any)?.[selectedType] || [];
+        if (queryData) {
+            return queryData.map((item: any) => ({
+                id: item._id,
+                description: item[fieldMapping]
+            }));
+        }
+
+        return [];
     };
 
     // Handlers
     const handleParameterSubmit = async (data: Parameter) => {
         setIsSubmitting(true);
         try {
-            const fieldName = getFieldMapping();
-            const payload = { [fieldName]: data.description };
+            const fieldMapping = CATEGORY_CONFIG[selectedCategory].fieldMappings[selectedType];
+            const payload = { [fieldMapping]: data.description };
+            const selectedQuery = CATEGORY_CONFIG[selectedCategory].queryKeys[selectedType];
 
             if (editingParameter) {
-                await updateParameter(selectedCategory, selectedType, editingParameter.id!, payload);
+                await updateParameter(selectedCategory, selectedQuery, editingParameter.id!, payload);
             } else {
-                await createParameter(selectedCategory, selectedType, payload);
+                await createParameter(selectedCategory, selectedQuery, payload);
             }
 
-            queryClient.invalidateQueries([CATEGORY_CONFIG[selectedCategory].queryKeys[selectedType as keyof typeof CATEGORY_CONFIG[typeof selectedCategory]['queryKeys']]]);
+            // Invalidate or refetch the query after modification
+            queryClient.invalidateQueries([selectedQuery]);
             toast.success(`Parameter ${editingParameter ? 'updated' : 'added'} successfully`);
             handleCloseDialog();
         } catch (error) {
@@ -155,9 +149,13 @@ export default function SettingsPage() {
     };
 
     const handleDeleteParameter = async (id: string) => {
+        const selectedQuery = CATEGORY_CONFIG[selectedCategory].queryKeys[selectedType];
+
         try {
-            await deleteParameter(selectedCategory, selectedType, id);
-            queryClient.invalidateQueries([CATEGORY_CONFIG[selectedCategory].queryKeys[selectedType as keyof typeof CATEGORY_CONFIG[typeof selectedCategory]['queryKeys']]]);
+            await deleteParameter(selectedCategory, selectedQuery, id);
+
+            // Invalidate or refetch the query after deletion
+            queryClient.invalidateQueries([selectedQuery]);
             toast.success('Parameter deleted successfully');
         } catch (error) {
             toast.error('Failed to delete parameter');
@@ -288,7 +286,7 @@ export default function SettingsPage() {
                             <label className="text-sm font-medium">Description</label>
                             <Input
                                 {...register('description')}
-                                defaultValue={editingParameter?.description}
+                                defaultValue={editingParameter?.description || ''}
                                 disabled={isSubmitting}
                             />
                             {errors.description && (
