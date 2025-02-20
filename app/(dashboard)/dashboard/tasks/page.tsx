@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { deleteTask, getTasks, taskStatuses, taskTypes, updateTask } from '@/lib/services/tasks';
+import {deleteTask, getTasks, Task, taskStatuses, taskTypes, updateTask} from '@/lib/services/tasks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowUpDown, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2 } from 'lucide-react';
@@ -100,8 +100,11 @@ export default function TasksPage() {
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
+  console.log("sortedTasks",sortedTasks)
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
+      console.log("sorted",sortField)
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
@@ -166,7 +169,8 @@ export default function TasksPage() {
   };
 
   const getTaskTypeName = (typeId: string) => {
-    return taskTypes.find(t => t.id === typeId)?.name || 'Unknown';
+    console.log("typeId",typeId)
+    return taskTypes.find(t => t.id === typeId)?.nom_type_tch || 'Unknown';
   };
 
   const getTaskStatusName = (statusId: string) => {
@@ -271,8 +275,8 @@ export default function TasksPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedTasks.map((task) => (
-              <TableRow key={task.id}>
+            {sortedTasks.map((task,index) => (
+              <TableRow key={index}>
                 <TableCell>
                   <Checkbox
                     checked={selectedTasks.includes(task.id!)}
@@ -280,7 +284,8 @@ export default function TasksPage() {
                   />
                 </TableCell>
                 <TableCell className="font-medium">{task.title_tache}</TableCell>
-                <TableCell>{getTaskTypeName(task.type_tache)}</TableCell>
+                <TableCell>{task.type_tache?.nom_type_tch}</TableCell>
+                {/*<TableCell>{getTaskTypeName(task.type_tache)}</TableCell>*/}
                 <TableCell>{format(new Date(task.date_tache), 'MMM dd, yyyy')}</TableCell>
                 <TableCell>
                   {task.date_execution_tache ?
@@ -288,8 +293,8 @@ export default function TasksPage() {
                     '-'
                   }
                 </TableCell>
-                <TableCell>{task.id_client}</TableCell>
-                <TableCell>{task.id_collaborateur}</TableCell>
+                <TableCell>{task?.id_client}</TableCell>
+                <TableCell>{task?.id_collaborateur}</TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(task.statut_tache)}`}>
                     {getTaskStatusName(task.statut_tache)}

@@ -2,7 +2,15 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TaskSchema, type Task, taskTypes, taskStatuses, collaborators } from '@/lib/services/tasks';
+import {
+  TaskSchema,
+  type Task,
+  taskTypes,
+  taskStatuses,
+  collaborators,
+  getAllTaskTypes,
+  getAllTaskStatus
+} from '@/lib/services/tasks';
 import { getClientContacts } from '@/lib/services/clients';
 import { getProjects } from '@/lib/services/projects';
 import { Button } from '@/components/ui/button';
@@ -23,6 +31,20 @@ export default function NewTaskPage() {
   const { data: clients = [] } = useQuery({
     queryKey: ['clientContacts'],
     queryFn: getClientContacts
+  });
+
+  const { data: collaborators = [] } = useQuery({
+    queryKey: ['clientContacts'],
+    queryFn: getClientContacts
+  });
+  const { data: taskTypes = [] } = useQuery({
+    queryKey: ['taskTypes'],
+    queryFn: getAllTaskTypes
+  });
+
+  const { data: taskStatus = [] } = useQuery({
+    queryKey: ['taskStatus'],
+    queryFn: getAllTaskStatus
   });
 
   const { data: projects = [] } = useQuery({
@@ -79,9 +101,9 @@ export default function NewTaskPage() {
                     <SelectValue placeholder="Select task type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {taskTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
+                    {taskTypes.map((type,index) => (
+                      <SelectItem key={index} value={type._id}>
+                        {type.nom_type_tch}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -176,9 +198,9 @@ export default function NewTaskPage() {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {taskStatuses.map((status) => (
-                    <SelectItem key={status.id} value={status.id}>
-                      {status.name}
+                  {taskStatus.map((status,index) => (
+                    <SelectItem key={index} value={status._id}>
+                      {status.nom_statut_tch}
                     </SelectItem>
                   ))}
                 </SelectContent>
