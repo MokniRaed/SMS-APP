@@ -238,3 +238,25 @@ export async function deleteTask(id: string): Promise<void> {
     throw new Error('Failed to delete task');
   }
 }
+
+
+
+export async function getAllTaskTypes(): Promise<any[]> {
+  try {
+    const response = await api.get(`/tasks/taskType`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for article command status');
+
+  }
+}
+
+export async function getAllTaskStatus(): Promise<any[]> {
+  try {
+    const response = await api.get(`/tasks/taskStatus`);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for article command status');
+
+  }
+}

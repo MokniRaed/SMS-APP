@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import {getAllTaskStatus, getAllTaskTypes} from "@/lib/services/tasks";
 
 // Types
 type ParameterCategory = 'projects' | 'tasks' | 'clients' | 'orders';
@@ -57,6 +58,18 @@ const CATEGORY_CONFIG = {
             type: 'nom_type_prj',
             status: 'nom_statut_prj',
             productCible: 'nom_produit_cible'
+        }
+    },
+    tasks: {
+        title: 'Tasks Parameters',
+        types: ['type', 'status'] as const,
+        queryKeys: {
+            type: 'taskType', // Corrected mapping
+            status: 'taskStatus' // Corrected mapping
+        },
+        fieldMappings: {
+            type: 'nom_type_tch',
+            status: 'nom_statut_tch',
         }
     },
     clients: {
@@ -101,6 +114,8 @@ export default function SettingsPage() {
     const queries = {
         statutcmds: useQuery({ queryKey: ['statutcmds'], queryFn: getAllStatusCmd }),
         statutartcmds: useQuery({ queryKey: ['statutartcmds'], queryFn: getAllStatusArtCmd }),
+        taskType: useQuery({ queryKey: ['taskType'], queryFn: getAllTaskTypes }),
+        taskStatus: useQuery({ queryKey: ['taskStatus'], queryFn: getAllTaskStatus }),
         type: useQuery<ProjectType[]>({ queryKey: ['type'], queryFn: getProjectsTypes }),
         status: useQuery({ queryKey: ['status'], queryFn: getProjectsStatus }),
         productcible: useQuery({ queryKey: ['productcible'], queryFn: getProjectsProductCible }),
