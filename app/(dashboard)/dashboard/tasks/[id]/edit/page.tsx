@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { getClientContacts } from '@/lib/services/clients';
 import { getProjects } from '@/lib/services/projects';
-import { collaborators, getTask, TaskSchema, taskStatuses, taskTypes, type Task } from '@/lib/services/tasks';
+import { getAllTaskStatus, getAllTaskTypes, getTask, TaskSchema, updateTask, type Task } from '@/lib/services/tasks';
+import { getUsersByRole } from '@/lib/services/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -30,33 +31,55 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
     queryFn: getClientContacts
   });
 
+
+  const { data: collaborators = [] } = useQuery({
+    queryKey: ['collaborators'],
+    queryFn: () => getUsersByRole("679694ee22268f25bdfcba23")
+  });
+
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: getProjects
   });
 
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<Task>({
-    resolver: zodResolver(TaskSchema),
-    values: task
+  const { data: taskTypes = [] } = useQuery({
+    queryKey: ['taskTypes'],
+    queryFn: getAllTaskTypes
   });
 
+  const { data: taskStatus = [] } = useQuery({
+    queryKey: ['taskStatus'],
+    queryFn: getAllTaskStatus
+  });
+
+
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<Task>({
+    resolver: zodResolver(TaskSchema),
+    values: {
+      ...task,
+      type_tache: task?.type_tache._id,
+      id_client: task?.id_client._id,
+      id_projet: task?.id_projet._id,
+      id_collaborateur: task?.id_collaborateur._id,
+      statut_tache: task?.statut_tache._id,
+      date_tache: task?.date_tache ? task.date_tache.split('T')[0] : "", // Ensure format YYYY-MM-DD
+      date_execution_tache: task?.date_execution_tache ? task.date_execution_tache.split('T')[0] : "" // Ensure format YYYY-MM-DD
+    },
+  });
 
 
   const onSubmit = async (data: Task) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/tasks/${params.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await updateTask(params.id, data)
 
-      if (!response.ok) throw new Error('Failed to update task');
+      if (response) throw new Error(`Failed to update Task : ${response?.message}`);
 
       toast.success('Task updated successfully');
       router.push('/dashboard/tasks');
     } catch (error) {
-      toast.error('Failed to update task');
+      console.log("err", error);
+      toast.error(` Failed to update Task :${error?.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -83,7 +106,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Task Type</label>
                 <Select
-                  defaultValue={task.type_tache}
+                  defaultValue={task.type_tache._id}
                   onValueChange={(value) => setValue('type_tache', value)}
                 >
                   <SelectTrigger>
@@ -91,8 +114,8 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                   </SelectTrigger>
                   <SelectContent>
                     {taskTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
+                      <SelectItem key={type._id} value={type._id}>
+                        {type.nom_type_tch}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -103,7 +126,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Client</label>
                 <Select
-                  defaultValue={task.id_client}
+                  defaultValue={task.id_client._id}
                   onValueChange={(value) => setValue('id_client', value)}
                 >
                   <SelectTrigger>
@@ -111,7 +134,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                   </SelectTrigger>
                   <SelectContent>
                     {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id_client}>
+                      <SelectItem key={client._id} value={client._id}>
                         {client.nom_prenom_contact}
                       </SelectItem>
                     ))}
@@ -125,7 +148,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Project</label>
                 <Select
-                  defaultValue={task.id_projet}
+                  defaultValue={task.id_projet._id}
                   onValueChange={(value) => setValue('id_projet', value)}
                 >
                   <SelectTrigger>
@@ -133,8 +156,8 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                   </SelectTrigger>
                   <SelectContent>
                     {projects.map((project) => (
-                      <SelectItem key={project.Id_projet} value={project.Id_projet}>
-                        {project.Type_projet}
+                      <SelectItem key={project._id} value={project._id}>
+                        {project.nom_projet}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -145,7 +168,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Collaborator</label>
                 <Select
-                  defaultValue={task.id_collaborateur}
+                  defaultValue={task.id_collaborateur._id}
                   onValueChange={(value) => setValue('id_collaborateur', value)}
                 >
                   <SelectTrigger>
@@ -153,8 +176,8 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                   </SelectTrigger>
                   <SelectContent>
                     {collaborators.map((collab) => (
-                      <SelectItem key={collab.id} value={collab.id}>
-                        {collab.name}
+                      <SelectItem key={collab._id} value={collab._id}>
+                        {collab.username}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -198,16 +221,16 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               <Select
-                defaultValue={task.statut_tache}
+                defaultValue={task.statut_tache._id}
                 onValueChange={(value) => setValue('statut_tache', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {taskStatuses.map((status) => (
-                    <SelectItem key={status.id} value={status.id}>
-                      {status.name}
+                  {taskStatus.map((status) => (
+                    <SelectItem key={status._id} value={status._id}>
+                      {status.nom_statut_tch}
                     </SelectItem>
                   ))}
                 </SelectContent>

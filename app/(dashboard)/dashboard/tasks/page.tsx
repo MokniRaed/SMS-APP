@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {deleteTask, getTasks, Task, taskStatuses, taskTypes, updateTask} from '@/lib/services/tasks';
+import { deleteTask, getTasks, Task, taskStatuses, taskTypes, updateTask } from '@/lib/services/tasks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowUpDown, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2 } from 'lucide-react';
@@ -100,11 +100,11 @@ export default function TasksPage() {
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  console.log("sortedTasks",sortedTasks)
+  console.log("sortedTasks", sortedTasks)
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      console.log("sorted",sortField)
+      console.log("sorted", sortField)
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
@@ -169,7 +169,7 @@ export default function TasksPage() {
   };
 
   const getTaskTypeName = (typeId: string) => {
-    console.log("typeId",typeId)
+    console.log("typeId", typeId)
     return taskTypes.find(t => t.id === typeId)?.nom_type_tch || 'Unknown';
   };
 
@@ -196,16 +196,16 @@ export default function TasksPage() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => router.push(`/dashboard/tasks/${task.id}`)}>
+        <DropdownMenuItem onClick={() => router.push(`/dashboard/tasks/${task._id}`)}>
           <Eye className="h-4 w-4 mr-2" />
           View Details
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(`/dashboard/tasks/${task.id}/edit`)}>
+        <DropdownMenuItem onClick={() => router.push(`/dashboard/tasks/${task._id}/edit`)}>
           <Pencil className="h-4 w-4 mr-2" />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => setDeleteTaskId(task.id)}
+          onClick={() => setDeleteTaskId(task._id)}
           className="text-red-600"
         >
           <Trash2 className="h-4 w-4 mr-2" />
@@ -275,7 +275,7 @@ export default function TasksPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedTasks.map((task,index) => (
+            {sortedTasks.map((task, index) => (
               <TableRow key={index}>
                 <TableCell>
                   <Checkbox
@@ -293,11 +293,12 @@ export default function TasksPage() {
                     '-'
                   }
                 </TableCell>
-                <TableCell>{task?.id_client}</TableCell>
-                <TableCell>{task?.id_collaborateur}</TableCell>
+                <TableCell>{task?.id_client.id_client}-{task?.id_client.nom_prenom_contact}</TableCell>
+                <TableCell>{task?.id_collaborateur.username}</TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(task.statut_tache)}`}>
-                    {getTaskStatusName(task.statut_tache)}
+                    {task.statut_tache.nom_statut_tch}
+                    {/* {getTaskStatusName(task.statut_tache.nom_statut_tch)} */}
                   </span>
                 </TableCell>
                 <TableCell>{renderTableActions(task)}</TableCell>

@@ -218,7 +218,9 @@ export async function createTask(task: Omit<Task, 'id'>): Promise<Task> {
     const response = await api.post('/tasks', task);
     return response.data;
   } catch (error) {
-    throw new Error('Failed to create task');
+    return error.response.data
+
+    // throw new Error('Failed to create task');
   }
 }
 

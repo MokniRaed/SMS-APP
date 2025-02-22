@@ -1,28 +1,27 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  TaskSchema,
-  type Task,
-  taskTypes,
-  taskStatuses,
-  collaborators,
-  getAllTaskTypes,
-  getAllTaskStatus
-} from '@/lib/services/tasks';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { getClientContacts } from '@/lib/services/clients';
 import { getProjects } from '@/lib/services/projects';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import {
+  createTask,
+  getAllTaskStatus,
+  getAllTaskTypes,
+  TaskSchema,
+  type Task
+} from '@/lib/services/tasks';
+import { getUsersByRole } from '@/lib/services/users';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 export default function NewTaskPage() {
   const router = useRouter();
@@ -34,8 +33,8 @@ export default function NewTaskPage() {
   });
 
   const { data: collaborators = [] } = useQuery({
-    queryKey: ['clientContacts'],
-    queryFn: getClientContacts
+    queryKey: ['collaborators'],
+    queryFn: () => getUsersByRole("679694ee22268f25bdfcba23")
   });
   const { data: taskTypes = [] } = useQuery({
     queryKey: ['taskTypes'],
@@ -62,18 +61,17 @@ export default function NewTaskPage() {
   const onSubmit = async (data: Task) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await createTask(data)
 
-      if (!response.ok) throw new Error('Failed to create task');
+      if (response) throw new Error(`Failed to create Task : ${response?.message}`);
 
       toast.success('Task created successfully');
       router.push('/dashboard/tasks');
     } catch (error) {
-      toast.error('Failed to create task');
+
+      console.log("err", error);
+
+      toast.error(` ${error?.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -101,7 +99,7 @@ export default function NewTaskPage() {
                     <SelectValue placeholder="Select task type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {taskTypes.map((type,index) => (
+                    {taskTypes.map((type, index) => (
                       <SelectItem key={index} value={type._id}>
                         {type.nom_type_tch}
                       </SelectItem>
@@ -118,8 +116,8 @@ export default function NewTaskPage() {
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client,index) => (
-                      <SelectItem key={index} value={client.id_client}>
+                    {clients.map((client, index) => (
+                      <SelectItem key={index} value={client._id}>
                         {client.nom_prenom_contact}
                       </SelectItem>
                     ))}
@@ -137,7 +135,7 @@ export default function NewTaskPage() {
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map((project,index) => (
+                    {projects.map((project, index) => (
                       <SelectItem key={index} value={project._id}>
                         {project.nom_projet}
                       </SelectItem>
@@ -154,9 +152,9 @@ export default function NewTaskPage() {
                     <SelectValue placeholder="Select collaborator" />
                   </SelectTrigger>
                   <SelectContent>
-                    {collaborators.map((collab) => (
-                      <SelectItem key={collab.id} value={collab.id}>
-                        {collab.name}
+                    {collaborators.map((collab, index) => (
+                      <SelectItem key={index} value={collab._id}>
+                        {collab.username}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -198,7 +196,7 @@ export default function NewTaskPage() {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {taskStatus.map((status,index) => (
+                  {taskStatus.map((status, index) => (
                     <SelectItem key={index} value={status._id}>
                       {status.nom_statut_tch}
                     </SelectItem>
