@@ -33,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cancelOrder, confirmOrder, deleteOrder, deliverOrder, getOrders, validateOrder } from '@/lib/services/orders';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { ArrowUpDown, Check, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, X } from 'lucide-react';
+import { ArrowUpDown, BookCopy, Check, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -330,6 +330,10 @@ export default function OrdersPage() {
                       <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}/edit`)}>
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}/duplicate`)}>
+                        <BookCopy className="h-4 w-4 mr-2" />
+                        Duplicate
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem

@@ -40,7 +40,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 // Mock user role - replace with actual auth
-const userRole = 'CLIENT';
+const userRole = 'COLLABORATEUR';
 
 const OrderLineSchema = z.object({
     id_article: z.string().min(1, 'Article is required'),
@@ -65,7 +65,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [open, setOpen] = useState(false);
     const [quantity, setQuantity] = useState(1);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Fetch order data
     const { data: orderData, isLoading: orderLoading } = useQuery({
@@ -178,21 +178,21 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         );
     }
 
-    if (!canUserEdit()) {
-        return (
-            <Card>
-                <CardContent className="pt-6">
-                    <div className="text-center space-y-4">
-                        <p>You don't have permission to edit this order.</p>
-                        <Button onClick={() => router.back()}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
+    // if (!canUserEdit()) {
+    //     return (
+    //         <Card>
+    //             <CardContent className="pt-6">
+    //                 <div className="text-center space-y-4">
+    //                     <p>You don't have permission to edit this order.</p>
+    //                     <Button onClick={() => router.back()}>
+    //                         <ArrowLeft className="mr-2 h-4 w-4" />
+    //                         Back
+    //                     </Button>
+    //                 </div>
+    //             </CardContent>
+    //         </Card>
+    //     );
+    // }
 
     return (
         <div className="max-w-4xl mx-auto">

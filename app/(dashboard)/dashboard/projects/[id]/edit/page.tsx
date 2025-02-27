@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getProject, getProjectsProductCible, getProjectsStatus, getProjectsTypes, getProjectsZones, ProjectSchema, updateProject, type Project } from '@/lib/services/projects';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -70,7 +70,13 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
     <div className="max-w-2xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>Edit Project</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Edit Project</CardTitle>
+            <Button variant="ghost" onClick={() => router.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

@@ -68,10 +68,8 @@ export default function NewTaskPage() {
       toast.success('Task created successfully');
       router.push('/dashboard/tasks');
     } catch (error) {
-
       console.log("err", error);
-
-      toast.error(` ${error?.message}`);
+      toast.error(`Failed to create Task : ${error?.message}`);
     } finally {
       setIsSubmitting(false);
     }

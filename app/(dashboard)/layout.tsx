@@ -4,21 +4,21 @@ import { NotificationCenter } from '@/components/notifications/notification-cent
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { UserMenu } from '@/components/user-menu';
-import { handleLogout } from '@/lib/utils';
+import { getUserFromLocalStorage, handleLogout } from '@/lib/utils';
 import { Briefcase, Database, FileText, Home, LogOut, Menu, Settings, ShoppingCart, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Tasks', href: '/dashboard/tasks', icon: FileText },
-  { name: 'Projects', href: '/dashboard/projects', icon: Briefcase },
-  { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart },
-  { name: 'Clients', href: '/dashboard/clients', icon: Users },
-  { name: 'Users', href: '/dashboard/users', icon: Users },
-  { name: 'Data Sync', href: '/dashboard/sync', icon: Database },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Dashboard', href: '/dashboard', icon: Home, roles: ['admin'] },
+  { name: 'Tasks', href: '/dashboard/tasks', icon: FileText, roles: ['admin', 'collaborateur'] },
+  { name: 'Projects', href: '/dashboard/projects', icon: Briefcase, roles: ['admin', 'collaborateur'] },
+  { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart, roles: ['admin', 'collaborateur,client'] },
+  { name: 'Clients', href: '/dashboard/clients', icon: Users, roles: ['admin', 'collaborateur'] },
+  { name: 'Users', href: '/dashboard/users', icon: Users, roles: ['admin'] },
+  { name: 'Data Sync', href: '/dashboard/sync', icon: Database, roles: ['admin'] },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
 ];
 
 export default function DashboardLayout({
@@ -29,6 +29,11 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = getUserFromLocalStorage()
+  const userRole = user.role
+  console.log("userRole", userRole);
+
+
 
   useEffect(() => {
     setMounted(true);
@@ -53,21 +58,23 @@ export default function DashboardLayout({
             <h1 className="text-2xl font-bold">Task Manager</h1>
           </div>
           <nav className="flex flex-col gap-1 p-4">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent ${pathname === item.href ? 'bg-accent' : ''
-                    }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  {item.name}
-                </Link>
-              );
-            })}
+            {navigation
+              // .filter((item) => item.roles.includes(userRole))
+              .map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent ${pathname === item.href ? 'bg-accent' : ''
+                      }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {item.name}
+                  </Link>
+                );
+              })}
             <Button variant="ghost" className="justify-start gap-2 mt-auto" onClick={() => handleLogout()}>
               <LogOut className="h-5 w-5" />
               Logout

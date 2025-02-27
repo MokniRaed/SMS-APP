@@ -33,7 +33,7 @@ import { getUsersByRole } from '@/lib/services/users';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronsUpDown, Loader2, Minus, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronsUpDown, Loader2, Minus, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -134,9 +134,6 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
 
     const watchArticles = watch('articles') || [];
     const statut_cmd = watch('statut_cmd') || [];
-    console.log("statut_cmd (cmd)", statut_cmd);
-    console.log("watchArticles (cmd)", watchArticles);
-    console.log("cmdLines", cmdLines);
 
     const handleQuantityChange = (index: number, change: number, field: 'quantite_cmd' | 'quantite_valid' | 'quantite_confr') => {
         const currentArticles = [...watchArticles];
@@ -269,8 +266,16 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         <div className="max-w-4xl mx-auto">
             <Card>
                 <CardHeader>
-                    <CardTitle>Edit Order #{order._id}</CardTitle>
+                    <div className="flex justify-between items-center">
+
+                        <CardTitle>Edit Order #{order._id}</CardTitle>
+                        <Button variant="ghost" onClick={() => router.back()}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back
+                        </Button>
+                    </div>
                 </CardHeader>
+
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">

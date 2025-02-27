@@ -11,7 +11,7 @@ import { getAllTaskStatus, getAllTaskTypes, getTask, TaskSchema, updateTask, typ
 import { getUsersByRole } from '@/lib/services/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -92,7 +92,13 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
     <div className="max-w-2xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>Edit Task</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Edit Task</CardTitle>
+            <Button variant="ghost" onClick={() => router.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

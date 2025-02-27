@@ -34,7 +34,7 @@ import {
 import { deleteProject, getProjects, Project, updateProject } from '@/lib/services/projects';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { ArrowUpDown, Calendar, LayoutGrid, MapPin, Pencil, Plus, Table as TableIcon, Target, Trash2 } from 'lucide-react';
+import { ArrowUpDown, BookCopy, Calendar, LayoutGrid, MapPin, MoreVertical, Pencil, Plus, Table as TableIcon, Target, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -246,28 +246,39 @@ export default function ProjectsPage() {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {sortedProjects.map((project) => (
-          <Card key={project._id} className="relative overflow-hidden">
+          <Card key={project._id} className="relative overflow-hidden group">
             <CardContent className="p-6">
+              {/* Checkbox */}
               <div className="absolute top-4 left-4">
                 <Checkbox
                   checked={selectedProjects.includes(project._id)}
                   onCheckedChange={(checked) => handleSelectProject(project._id, checked as boolean)}
                 />
               </div>
-              <div className="flex justify-between items-start mb-4 pl-8">
-                <Badge className={getProjectTypeColor(project.type_projet.nom_type_prj)}>
-                  {project.type_projet.nom_type_prj}
-                </Badge>
+
+              {/* Delete Button in Top-Right Corner (Hidden by default, visible on hover) */}
+              <div className="absolute top-0 right-0 transform -translate-y-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDeleteProjectId(project._id)}
+                  className="text-muted-foreground hover:text-destructive focus:outline-none"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* Project Type and Status and Name */}
+              <div className="flex justify-between items-start mt-8">
+                <div className="font-medium">{project.nom_projet}</div>
                 <Badge className={getStatusColor(project.statut_projet.nom_statut_prj)}>
                   {project.statut_projet.nom_statut_prj}
                 </Badge>
               </div>
-
+              <div className="flex justify-between items-start mt-4 "></div>
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-lg line-clamp-1">
-                    {project.produ}
-                  </h3>
+                  <h3 className="font-semibold text-lg line-clamp-1">{project.produ}</h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {project.description_projet}
                   </p>
@@ -294,6 +305,11 @@ export default function ProjectsPage() {
                       <span>{format(new Date(project.periode_date_fin), 'MMM d')}</span>
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Badge className={getProjectTypeColor(project.type_projet.nom_type_prj)}>
+                      {project.type_projet.nom_type_prj}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
@@ -306,21 +322,50 @@ export default function ProjectsPage() {
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteProjectId(project._id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}
+
       </div>
+
     );
   };
+
+
+
+
+  const renderTableActions = (project: Project) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <MoreVertical className="h-4 w-4 " />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {/* <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/dashboard/tasks/${task._id}`)}>
+          <Eye className="h-4 w-4 mr-2 " />
+          View Details
+        </DropdownMenuItem> */}
+        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/dashboard/projects/${project._id}/edit`)}        >
+          <Pencil className="h-4 w-4 mr-2 " />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/dashboard/projects/${project._id}/duplicate`)}>
+          <BookCopy className="h-4 w-4 mr-2 " />
+          Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setDeleteProjectId(project._id)}
+          className="text-red-600"
+        >
+          <Trash2 className="h-4 w-4 mr-2 cursor-pointer" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   const renderTableView = () => {
     if (isLoading) {
@@ -379,24 +424,7 @@ export default function ProjectsPage() {
                 <TableCell>{format(new Date(project.periode_date_debut), 'MMM d, yyyy')}</TableCell>
                 <TableCell>{format(new Date(project.periode_date_fin), 'MMM d, yyyy')}</TableCell>
                 <TableCell>${project.objectif_ca?.toLocaleString() || '-'}</TableCell>
-                <TableCell>
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => router.push(`/dashboard/projects/${project._id}/edit`)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteProjectId(project._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+                <TableCell>{renderTableActions(project)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

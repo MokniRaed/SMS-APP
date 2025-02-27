@@ -185,6 +185,7 @@ export default function TaskDetailsPage({ params }: { params: { id: string } }) 
           <Pencil className="h-4 w-4 mr-2" />
           Edit Task
         </Button>
+
       </div>
 
       <Card>

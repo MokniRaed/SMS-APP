@@ -32,7 +32,7 @@ import {
 import { deleteTask, getTasks, Task, taskStatuses, taskTypes, updateTask } from '@/lib/services/tasks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { ArrowUpDown, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2 } from 'lucide-react';
+import { ArrowUpDown, BookCopy, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -114,12 +114,13 @@ export default function TasksPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedTasks(tasks.map(task => task.id!));
+      setSelectedTasks(tasks.map(task => task._id!));
     } else {
       setSelectedTasks([]);
     }
   };
 
+  // In handleSelectTask
   const handleSelectTask = (taskId: string, checked: boolean) => {
     if (checked) {
       setSelectedTasks(prev => [...prev, taskId]);
@@ -192,23 +193,27 @@ export default function TasksPage() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon">
-          <MoreVertical className="h-4 w-4" />
+          <MoreVertical className="h-4 w-4 " />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => router.push(`/dashboard/tasks/${task._id}`)}>
-          <Eye className="h-4 w-4 mr-2" />
+        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/dashboard/tasks/${task._id}`)}>
+          <Eye className="h-4 w-4 mr-2 " />
           View Details
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(`/dashboard/tasks/${task._id}/edit`)}>
-          <Pencil className="h-4 w-4 mr-2" />
+        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/dashboard/tasks/${task._id}/edit`)}>
+          <Pencil className="h-4 w-4 mr-2 " />
           Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push(`/dashboard/tasks/${task._id}/duplicate`)}>
+          <BookCopy className="h-4 w-4 mr-2 " />
+          Duplicate
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => setDeleteTaskId(task._id)}
           className="text-red-600"
         >
-          <Trash2 className="h-4 w-4 mr-2" />
+          <Trash2 className="h-4 w-4 mr-2 cursor-pointer" />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -279,8 +284,8 @@ export default function TasksPage() {
               <TableRow key={index}>
                 <TableCell>
                   <Checkbox
-                    checked={selectedTasks.includes(task.id!)}
-                    onCheckedChange={(checked) => handleSelectTask(task.id!, checked as boolean)}
+                    checked={selectedTasks.includes(task._id)}
+                    onCheckedChange={(checked) => handleSelectTask(task._id, checked as boolean)}
                   />
                 </TableCell>
                 <TableCell className="font-medium">{task.title_tache}</TableCell>
@@ -349,8 +354,8 @@ export default function TasksPage() {
               <CardContent className="p-6">
                 <div className="absolute top-4 left-4">
                   <Checkbox
-                    checked={selectedTasks.includes(task.id!)}
-                    onCheckedChange={(checked) => handleSelectTask(task.id!, checked as boolean)}
+                    checked={selectedTasks.includes(task._id)}
+                    onCheckedChange={(checked) => handleSelectTask(task._id, checked as boolean)}
                   />
                 </div>
                 <div className="flex justify-between items-start mb-4 pl-8">
@@ -395,7 +400,16 @@ export default function TasksPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDeleteTaskId(task.id)}
+                      onClick={() => router.push(`/dashboard/tasks/${task.id}/duplicate`)}
+                    >
+                      <BookCopy className="h-4 w-4" />
+                    </Button>
+
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteTaskId(task._id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

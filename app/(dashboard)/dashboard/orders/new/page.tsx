@@ -2,19 +2,16 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
@@ -28,10 +25,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { getArticles } from '@/lib/services/articles';
 import { getClientContacts } from '@/lib/services/clients';
 import { getUsersByRole } from '@/lib/services/users';
-import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronsUpDown, Loader2, Minus, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Minus, Plus, Search, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -44,8 +40,9 @@ const userRole = 'CLIENT';
 const OrderLineSchema = z.object({
   id_article: z.string().min(1, 'Article is required'),
   quantite_cmd: z.number().min(1, 'Quantity must be at least 1'),
+  quantite_valid: z.number().default(0),
+  quantite_confr: z.number().default(0),
   notes_cmd: z.string().optional(),
-  // statut_art_cmd: z.enum(['PENDING', 'VALIDATED', 'CONFIRMED', 'CANCELLED']),
   statut_art_cmd: z.string()
 });
 
@@ -62,8 +59,11 @@ type OrderForm = z.infer<typeof OrderSchema>;
 export default function NewOrderPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
+  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+  const [articleCategory, setArticleCategory] = useState<string>("all");
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
@@ -80,6 +80,9 @@ export default function NewOrderPage() {
     queryFn: getArticles
   });
 
+  // Get unique categories for filtering
+  const categories = [...new Set(articles.map(article => article.art_categorie))];
+
   const { register, handleSubmit, formState: { errors }, control, watch, setValue } = useForm<OrderForm>({
     resolver: zodResolver(OrderSchema),
     defaultValues: {
@@ -95,21 +98,82 @@ export default function NewOrderPage() {
 
   const watchArticles = watch('articles');
 
+  const filteredArticles = articles.filter(article => {
+    const matchesSearch = article.art_designation.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = articleCategory === "all" || article.art_categorie === articleCategory;
+    return matchesSearch && matchesCategory;
+  });
+
   const handleQuantityChange = (index: number, change: number) => {
     const currentQuantity = watchArticles[index]?.quantite_cmd || 0;
     const newQuantity = Math.max(1, currentQuantity + change);
     update(index, { ...watchArticles[index], quantite_cmd: newQuantity });
   };
 
-  const handleAddArticle = (article: any) => {
-    append({
-      id_article: article._id,
-      quantite_cmd: quantity,
-      notes_cmd: '',
-      statut_art_cmd: '67b1670ed3246eb50d70e09c'
+  const handleArticleSelect = (articleId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedArticles(prev => [...prev, articleId]);
+      setSelectedQuantities(prev => ({
+        ...prev,
+        [articleId]: prev[articleId] || 1
+      }));
+    } else {
+      setSelectedArticles(prev => prev.filter(id => id !== articleId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = filteredArticles.map(article => article._id);
+      setSelectedArticles(allIds);
+
+      const quantities: Record<string, number> = {};
+      allIds.forEach(id => {
+        quantities[id] = selectedQuantities[id] || 1;
+      });
+      setSelectedQuantities(quantities);
+    } else {
+      setSelectedArticles([]);
+    }
+  };
+
+  const updateArticleQuantity = (articleId: string, change: number) => {
+    setSelectedQuantities(prev => ({
+      ...prev,
+      [articleId]: Math.max(1, (prev[articleId] || 1) + change)
+    }));
+  };
+
+  const addSelectedArticlesToOrder = () => {
+    selectedArticles.forEach(articleId => {
+      const existingIndex = fields.findIndex(field => field.id_article === articleId);
+
+      if (existingIndex >= 0) {
+        // Update existing article
+        const newQuantity = watchArticles[existingIndex].quantite_cmd + (selectedQuantities[articleId] || 1);
+        update(existingIndex, {
+          ...watchArticles[existingIndex],
+          quantite_cmd: newQuantity
+        });
+      } else {
+        // Add new article
+        append({
+          id_article: articleId,
+          quantite_cmd: selectedQuantities[articleId] || 1,
+          quantite_valid: 0,
+          quantite_confr: 0,
+          notes_cmd: '',
+          statut_art_cmd: '67b1670ed3246eb50d70e09c'
+        });
+      }
     });
-    setQuantity(1);
-    setOpen(false);
+
+    // Reset selections
+    setSelectedArticles([]);
+    setSelectedQuantities({});
+    setSearchTerm('');
+    setArticleCategory("all");
+    setIsDialogOpen(false);
   };
 
   const onSubmit = async (data: OrderForm) => {
@@ -123,8 +187,8 @@ export default function NewOrderPage() {
           statut_cmd: '67b164ea14c46c093c5f3f74',
           articles: data.articles.map(article => ({
             ...article,
-            quantite_valid: 0,
-            quantite_confr: 0
+            quantite_valid: article.quantite_valid || 0,
+            quantite_confr: article.quantite_confr || 0
           }))
         }),
       });
@@ -137,6 +201,22 @@ export default function NewOrderPage() {
       toast.error('Failed to create order');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Get status label
+  const getStatusLabel = (statusId: string) => {
+    switch (statusId) {
+      case '67b1670ed3246eb50d70e09c':
+        return 'Pending';
+      case '67b1672ed3246eb50d70e09d':
+        return 'Validated';
+      case '67b1674ad3246eb50d70e09e':
+        return 'Confirmed';
+      case '67b1676dd3246eb50d70e09f':
+        return 'Cancelled';
+      default:
+        return 'Unknown';
     }
   };
 
@@ -166,8 +246,8 @@ export default function NewOrderPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.id_client && (
-                  <p className="text-sm text-red-500">{errors.id_client.message}</p>
+                {errors.id_collaborateur && (
+                  <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>
                 )}
               </div>
 
@@ -218,73 +298,131 @@ export default function NewOrderPage() {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Popover open={open} onOpenChange={setOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={open}
-                      className="w-[300px] justify-between"
-                    >
-                      Select an article...
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add Articles
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0">
-                    <Command>
-                      <CommandInput placeholder="Search articles..." />
-                      <CommandEmpty>No article found.</CommandEmpty>
-                      <CommandGroup>
-                        {articles.map((article) => (
-                          <CommandItem
-                            key={article._id}
-                            value={article.art_designation}
-                            onSelect={() => handleAddArticle(article)}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                watchArticles.some(line => line.id_article === article._id)
-                                  ? "opacity-100"
-                                  : "opacity-0"
-                              )}
-                            />
-                            <div className="flex flex-col">
-                              <span>{article.art_designation}</span>
-                              <span className="text-sm text-muted-foreground">
-                                {article.art_prix} - {article.art_categorie}
-                              </span>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium">Quantity:</label>
-                    <div className="flex items-center">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Select Articles</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search articles..."
+                          className="pl-8"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+
+                      <Select
+                        value={articleCategory}
+                        onValueChange={setArticleCategory}
                       >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-12 text-center">{quantity}</span>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Filter by category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[50px]">
+                              <Checkbox
+                                checked={selectedArticles.length === filteredArticles.length && filteredArticles.length > 0}
+                                onCheckedChange={handleSelectAll}
+                              />
+                            </TableHead>
+                            <TableHead>Article</TableHead>
+                            {/* <TableHead>Category</TableHead> */}
+                            {/* <TableHead>Price</TableHead> */}
+                            <TableHead>Quantity</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredArticles.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-6">
+                                No articles found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            filteredArticles.map((article) => (
+                              <TableRow key={article._id}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedArticles.includes(article._id)}
+                                    onCheckedChange={(checked) =>
+                                      handleArticleSelect(article._id, checked as boolean)
+                                    }
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium">{article.art_designation}</div>
+                                </TableCell>
+                                {/* <TableCell>{article.art_categorie}</TableCell> */}
+                                {/* <TableCell>{article.art_prix}</TableCell> */}
+                                <TableCell>
+                                  {selectedArticles.includes(article._id) && (
+                                    <div className="flex items-center space-x-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => updateArticleQuantity(article._id, -1)}
+                                      >
+                                        <Minus className="h-4 w-4" />
+                                      </Button>
+                                      <span className="w-10 text-center">
+                                        {selectedQuantities[article._id] || 1}
+                                      </span>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => updateArticleQuantity(article._id, 1)}
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    <div className="flex justify-end gap-2 mt-4">
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
                       <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setQuantity(quantity + 1)}
+                        onClick={addSelectedArticlesToOrder}
+                        disabled={selectedArticles.length === 0}
                       >
-                        <Plus className="h-4 w-4" />
+                        Add {selectedArticles.length > 0 ? `(${selectedArticles.length})` : ''}
                       </Button>
                     </div>
-                  </div>
-                </div>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <div className="rounded-md border">
@@ -292,69 +430,120 @@ export default function NewOrderPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Article</TableHead>
-                      <TableHead>Quantity</TableHead>
+                      {/* <TableHead>Category</TableHead> */}
+                      {/* <TableHead>Price</TableHead> */}
+                      <TableHead>Initial Quantity</TableHead>
+                      <TableHead>Validated</TableHead>
+                      <TableHead>Confirmed</TableHead>
                       <TableHead>Notes</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {fields.map((field, index) => {
-                      const article = articles.find(a => a._id === field.id_article);
-                      return (
-                        <TableRow key={field.id}>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{article?.art_designation}</span>
-                              <span className="text-sm text-muted-foreground">
-                                {article?.art_prix}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                onClick={() => handleQuantityChange(index, -1)}
+                    {fields.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-6">
+                          No articles added to order
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      fields.map((field, index) => {
+                        const article = articles.find(a => a._id === field.id_article);
+                        return (
+                          <TableRow key={field.id}>
+                            <TableCell>
+                              <div className="font-medium">{article?.art_designation}</div>
+                            </TableCell>
+                            {/* <TableCell>{article?.art_categorie}</TableCell> */}
+                            {/* <TableCell>{article?.art_prix}</TableCell> */}
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleQuantityChange(index, -1)}
+                                  disabled={isSubmitting}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <span className="w-10 text-center">
+                                  {watchArticles[index]?.quantite_cmd}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleQuantityChange(index, 1)}
+                                  disabled={isSubmitting}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...register(`articles.${index}.quantite_valid`, {
+                                  valueAsNumber: true
+                                })}
+                                disabled={isSubmitting}
+                                className="w-20"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...register(`articles.${index}.quantite_confr`, {
+                                  valueAsNumber: true
+                                })}
+                                disabled={isSubmitting}
+                                className="w-20"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                {...register(`articles.${index}.notes_cmd`)}
+                                disabled={isSubmitting}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                defaultValue={field.statut_art_cmd}
+                                onValueChange={(value) => {
+                                  update(index, { ...watchArticles[index], statut_art_cmd: value })
+                                }}
                                 disabled={isSubmitting}
                               >
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <span className="w-12 text-center">
-                                {watchArticles[index]?.quantite_cmd}
-                              </span>
+                                <SelectTrigger className="w-28">
+                                  <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="67b1670ed3246eb50d70e09c">Pending</SelectItem>
+                                  <SelectItem value="67b1672ed3246eb50d70e09d">Validated</SelectItem>
+                                  <SelectItem value="67b1674ad3246eb50d70e09e">Confirmed</SelectItem>
+                                  <SelectItem value="67b1676dd3246eb50d70e09f">Cancelled</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
                               <Button
                                 type="button"
-                                variant="outline"
+                                variant="ghost"
                                 size="icon"
-                                onClick={() => handleQuantityChange(index, 1)}
+                                onClick={() => remove(index)}
                                 disabled={isSubmitting}
                               >
-                                <Plus className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              {...register(`articles.${index}.notes_cmd`)}
-                              disabled={isSubmitting}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => remove(index)}
-                              disabled={isSubmitting}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </div>

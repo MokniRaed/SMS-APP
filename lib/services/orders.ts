@@ -117,12 +117,10 @@ export async function getOrder(id: string): Promise<Order> {
 
 export async function createOrder(order: Omit<Order, '_id'>): Promise<Order> {
   try {
-    const response = await api.post('/api/orders', {
+    const response = await api.post('/orders', {
       ...order,
-      statut_cmd: 'VALIDATION',
       articles: order.articles.map(article => ({
         ...article,
-        statut_art_cmd: 'PENDING'
       }))
     });
     return response.data;
@@ -142,7 +140,7 @@ export async function updateOrder(id: string, order: Partial<Order>): Promise<Or
 
 export async function deleteOrder(id: string): Promise<void> {
   try {
-    await api.delete(`/api/orders/${id}`);
+    await api.delete(`/orders/${id}`);
   } catch (error) {
     throw new Error('Failed to delete order');
   }
