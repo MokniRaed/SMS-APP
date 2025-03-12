@@ -1,5 +1,6 @@
 'use client';
 
+import AdvancedArticleFilter from '@/components/AdvancedArticleFilter ';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,7 +28,7 @@ import { getClientContacts } from '@/lib/services/clients';
 import { getUsersByRole } from '@/lib/services/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Minus, Plus, Search, Trash2 } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -64,7 +65,12 @@ export default function NewOrderPage() {
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
   const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
   const [articleCategory, setArticleCategory] = useState<string>("all");
+  const [filteredArticles, setFilteredArticles] = useState([]);
 
+
+  const handleFilterChange = (filtered: any) => {
+    setFilteredArticles(filtered);
+  };
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: getClientContacts
@@ -98,11 +104,11 @@ export default function NewOrderPage() {
 
   const watchArticles = watch('articles');
 
-  const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.art_designation.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = articleCategory === "all" || article.art_categorie === articleCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // const filteredArticles = articles.filter(article => {
+  //   const matchesSearch = article.art_designation.toLowerCase().includes(searchTerm.toLowerCase());
+  //   const matchesCategory = articleCategory === "all" || article.art_categorie === articleCategory;
+  //   return matchesSearch && matchesCategory;
+  // });
 
   const handleQuantityChange = (index: number, change: number) => {
     const currentQuantity = watchArticles[index]?.quantite_cmd || 0;
@@ -309,8 +315,11 @@ export default function NewOrderPage() {
                     <DialogHeader>
                       <DialogTitle>Select Articles</DialogTitle>
                     </DialogHeader>
-
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <AdvancedArticleFilter
+                      articles={articles}
+                      onFilterChange={handleFilterChange}
+                    />
+                    {/* <div className="grid grid-cols-2 gap-4 mb-4">
                       <div className="relative">
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -337,9 +346,10 @@ export default function NewOrderPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
+                    </div> */}
 
                     <div className="border rounded-md">
+
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -352,7 +362,12 @@ export default function NewOrderPage() {
                             <TableHead>Article</TableHead>
                             {/* <TableHead>Category</TableHead> */}
                             {/* <TableHead>Price</TableHead> */}
-                            <TableHead>Quantity</TableHead>
+                            <TableHead>Marque</TableHead>
+                            <TableHead>Famille</TableHead>
+                            <TableHead>Niveau 1</TableHead>
+                            <TableHead>Niveau 2</TableHead>
+                            <TableHead>Societé</TableHead>
+
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -363,48 +378,80 @@ export default function NewOrderPage() {
                               </TableCell>
                             </TableRow>
                           ) : (
-                            filteredArticles.map((article) => (
-                              <TableRow key={article._id}>
-                                <TableCell>
-                                  <Checkbox
-                                    checked={selectedArticles.includes(article._id)}
-                                    onCheckedChange={(checked) =>
-                                      handleArticleSelect(article._id, checked as boolean)
-                                    }
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <div className="font-medium">{article.art_designation}</div>
-                                </TableCell>
-                                {/* <TableCell>{article.art_categorie}</TableCell> */}
-                                {/* <TableCell>{article.art_prix}</TableCell> */}
-                                <TableCell>
-                                  {selectedArticles.includes(article._id) && (
-                                    <div className="flex items-center space-x-2">
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => updateArticleQuantity(article._id, -1)}
-                                      >
-                                        <Minus className="h-4 w-4" />
-                                      </Button>
-                                      <span className="w-10 text-center">
-                                        {selectedQuantities[article._id] || 1}
-                                      </span>
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => updateArticleQuantity(article._id, 1)}
-                                      >
-                                        <Plus className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  )}
+                            <>
+                              {filteredArticles.map((article) => (
+                                <TableRow key={article._id}>
+                                  <TableCell>
+                                    <Checkbox
+                                      checked={selectedArticles.includes(article._id)}
+                                      onCheckedChange={(checked) =>
+                                        handleArticleSelect(article._id, checked as boolean)
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">{article.art_designation}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">{article.art_marque}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">{article.art_code_famille}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">{article.art_cat_niv_1}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">{article.art_cat_niv_2}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">{article.art_st}</div>
+                                  </TableCell>
+                                  {/* <TableCell>{article.art_categorie}</TableCell> */}
+                                  {/* <TableCell>{article.art_prix}</TableCell> */}
+                                  <TableCell>
+                                    {selectedArticles.includes(article._id) && (
+                                      <div className="flex items-center space-x-2">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="icon"
+                                          onClick={() => updateArticleQuantity(article._id, -1)}
+                                        >
+                                          <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <span className="w-10 text-center">
+                                          {selectedQuantities[article._id] || 1}
+                                        </span>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="icon"
+                                          onClick={() => updateArticleQuantity(article._id, 1)}
+                                        >
+                                          <Plus className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+
+                              ))}
+                              <TableRow>
+                                <TableCell colSpan={9} className="py-4 bg-gray-50 dark:bg-gray-800">
+                                  <div className="flex justify-end">
+                                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline" className="gap-2">
+                                          <Plus className="h-4 w-4" />
+                                          Add More Articles
+                                        </Button>
+                                      </DialogTrigger>
+                                    </Dialog>
+                                  </div>
                                 </TableCell>
                               </TableRow>
-                            ))
+                            </>
                           )}
                         </TableBody>
                       </Table>
@@ -443,10 +490,21 @@ export default function NewOrderPage() {
                   <TableBody>
                     {fields.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center py-6">
-                          No articles added to order
+                        <TableCell colSpan={9} className="py-12">
+                          <div className="flex flex-col items-center justify-center gap-4 p-4">
+                            <p className="text-gray-500 dark:text-gray-400">No articles added to order</p>
+                            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                              <DialogTrigger asChild>
+                                <Button variant="default" className="gap-2">
+                                  <Plus className="h-4 w-4" />
+                                  Add Articles
+                                </Button>
+                              </DialogTrigger>
+                            </Dialog>
+                          </div>
                         </TableCell>
                       </TableRow>
+
                     ) : (
                       fields.map((field, index) => {
                         const article = articles.find(a => a._id === field.id_article);

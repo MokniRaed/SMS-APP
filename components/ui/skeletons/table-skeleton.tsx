@@ -1,48 +1,35 @@
-'use client';
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface TableSkeletonProps {
-  columnCount?: number;
+  columnCount: number;
   rowCount?: number;
 }
 
-export function TableSkeleton({ 
-  columnCount = 5, 
-  rowCount = 5 
-}: TableSkeletonProps) {
+export function TableSkeleton({ columnCount, rowCount = 5 }: TableSkeletonProps) {
   return (
     <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
+      <table className="w-full">
+        <thead>
+          <tr>
             {Array.from({ length: columnCount }).map((_, i) => (
-              <TableHead key={i}>
-                <Skeleton className="h-4 w-[100px]" />
-              </TableHead>
+              <th key={i} className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:not([:first-child])]:pl-0">
+                <Skeleton className="h-4 w-[150px]" />
+              </th>
             ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.from({ length: rowCount }).map((_, rowIndex) => (
-            <TableRow key={rowIndex}>
-              {Array.from({ length: columnCount }).map((_, colIndex) => (
-                <TableCell key={colIndex}>
-                  <Skeleton className="h-4 w-[100px]" />
-                </TableCell>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: rowCount }).map((_, i) => (
+            <tr key={i}>
+              {Array.from({ length: columnCount }).map((_, j) => (
+                <td key={j} className="p-4 align-middle [&:not([:first-child])]:pl-0">
+                  <Skeleton className="h-4 w-[150px]" />
+                </td>
               ))}
-            </TableRow>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }

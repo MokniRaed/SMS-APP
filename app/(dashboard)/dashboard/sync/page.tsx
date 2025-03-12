@@ -14,7 +14,42 @@ type DataType = {
   name: string;
   description: string;
   endpoint?: string;
+  hasSubTypes?: boolean;
 };
+
+type CategoryType = {
+  id: string;
+  name: string;
+  endpoint: string;
+};
+
+const categoryTypes: CategoryType[] = [
+  {
+    id: 'cat_stat',
+    name: 'Stat Niveau 1',
+    endpoint: '/categories/upload?type=cat_stat'
+  },
+  {
+    id: 'cat_nv_1',
+    name: 'Stat Niveau 2',
+    endpoint: '/categories/upload?type=cat_nv_1'
+  },
+  {
+    id: 'cat_nv_2',
+    name: ' Stat Niveau 3',
+    endpoint: '/categories/upload?type=cat_nv_2'
+  },
+  {
+    id: 'st',
+    name: ' Societé',
+    endpoint: '/categories/upload?type=st'
+  },
+  {
+    id: 'marque',
+    name: 'Marque',
+    endpoint: '/categories/upload?type=marque'
+  }
+];
 
 const importTypes: DataType[] = [
   {
@@ -46,6 +81,12 @@ const importTypes: DataType[] = [
     name: 'Sous-Zones',
     description: 'Import sub-zones',
     endpoint: '/projects/upload-sub-zones'
+  },
+  {
+    id: 'categories',
+    name: 'Categories',
+    description: 'Import category data',
+    hasSubTypes: true
   },
 ];
 
@@ -102,6 +143,7 @@ interface FilePreview {
 
 export default function SyncPage() {
   const [selectedImport, setSelectedImport] = useState<string>('');
+  const [selectedCategoryType, setSelectedCategoryType] = useState<string>('');
   const [selectedExport, setSelectedExport] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -161,15 +203,28 @@ export default function SyncPage() {
     });
   };
 
+  const handleImportTypeChange = (value: string) => {
+    setSelectedImport(value);
+    setError(null);
+    // Reset category type if user changes import type
+    if (value !== 'categories') {
+      setSelectedCategoryType('');
+    }
+  };
+
   const handleImportFile = async () => {
-    if (!selectedFile || !selectedImport) {
-      toast.error('Please select both a file and data type to import');
+    if (!selectedFile) {
+      toast.error('Please select a file to import');
       return;
     }
 
-    const selectedType = importTypes.find(type => type.id === selectedImport);
-    if (!selectedType?.endpoint) {
-      toast.error('Invalid import type selected');
+    if (selectedImport === 'categories' && !selectedCategoryType) {
+      toast.error('Please select a category type to import');
+      return;
+    }
+
+    if (!selectedImport) {
+      toast.error('Please select a data type to import');
       return;
     }
 
@@ -179,9 +234,26 @@ export default function SyncPage() {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+
+      let endpoint;
+      if (selectedImport === 'categories') {
+        const categoryType = categoryTypes.find(type => type.id === selectedCategoryType);
+        if (!categoryType?.endpoint) {
+          throw new Error('Invalid category type selected');
+        }
+        endpoint = categoryType.endpoint;
+        formData.append('categoryType', selectedCategoryType);
+      } else {
+        const selectedType = importTypes.find(type => type.id === selectedImport);
+        if (!selectedType?.endpoint) {
+          throw new Error('Invalid import type selected');
+        }
+        endpoint = selectedType.endpoint;
+      }
+
       formData.append('type', selectedImport);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${selectedType.endpoint}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
         method: 'POST',
         body: formData,
       });
@@ -266,10 +338,7 @@ export default function SyncPage() {
                 <label className="text-sm font-medium">Select Data Type</label>
                 <Select
                   value={selectedImport}
-                  onValueChange={(value) => {
-                    setSelectedImport(value);
-                    setError(null);
-                  }}
+                  onValueChange={handleImportTypeChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select data to import" />
@@ -286,6 +355,28 @@ export default function SyncPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Show Category Type dropdown when Categories is selected */}
+              {selectedImport === 'categories' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Select Category Type</label>
+                  <Select
+                    value={selectedCategoryType}
+                    onValueChange={setSelectedCategoryType}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
@@ -334,7 +425,12 @@ export default function SyncPage() {
                 )}
 
                 <Button
-                  disabled={isImporting || !selectedImport || !selectedFile}
+                  disabled={
+                    isImporting ||
+                    !selectedImport ||
+                    !selectedFile ||
+                    (selectedImport === 'categories' && !selectedCategoryType)
+                  }
                   onClick={handleImportFile}
                   className="w-full"
                 >

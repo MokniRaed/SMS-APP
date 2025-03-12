@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { UserMenu } from '@/components/user-menu';
 import { getUserFromLocalStorage, handleLogout } from '@/lib/utils';
-import { Briefcase, Database, FileText, Home, LogOut, Menu, Settings, ShoppingCart, Users } from 'lucide-react';
+import { Boxes, Briefcase, Database, FileText, Handshake, Home, LogOut, Menu, Settings, ShoppingCart, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -15,7 +15,8 @@ const navigation = [
   { name: 'Tasks', href: '/dashboard/tasks', icon: FileText, roles: ['admin', 'collaborateur'] },
   { name: 'Projects', href: '/dashboard/projects', icon: Briefcase, roles: ['admin', 'collaborateur'] },
   { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart, roles: ['admin', 'collaborateur,client'] },
-  { name: 'Clients', href: '/dashboard/clients', icon: Users, roles: ['admin', 'collaborateur'] },
+  { name: 'categoreis', href: '/dashboard/categories', icon: Boxes, roles: ['admin', 'collaborateur,client'] },
+  { name: 'Clients', href: '/dashboard/clients', icon: Handshake, roles: ['admin', 'collaborateur'] },
   { name: 'Users', href: '/dashboard/users', icon: Users, roles: ['admin'] },
   { name: 'Data Sync', href: '/dashboard/sync', icon: Database, roles: ['admin'] },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
