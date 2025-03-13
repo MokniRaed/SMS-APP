@@ -11,11 +11,11 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home, roles: ['admin'] },
+  { name: 'Dashboard', href: '/dashboard', icon: Home, roles: ['collaborateur', 'admin'] },
   { name: 'Tasks', href: '/dashboard/tasks', icon: FileText, roles: ['admin', 'collaborateur'] },
   { name: 'Projects', href: '/dashboard/projects', icon: Briefcase, roles: ['admin', 'collaborateur'] },
-  { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart, roles: ['admin', 'collaborateur,client'] },
-  { name: 'categoreis', href: '/dashboard/categories', icon: Boxes, roles: ['admin', 'collaborateur,client'] },
+  { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart, roles: ['admin', 'collaborateur', 'client'] },
+  { name: 'Categories', href: '/dashboard/categories', icon: Boxes, roles: ['admin', 'collaborateur'] },
   { name: 'Clients', href: '/dashboard/clients', icon: Handshake, roles: ['admin', 'collaborateur'] },
   { name: 'Users', href: '/dashboard/users', icon: Users, roles: ['admin'] },
   { name: 'Data Sync', href: '/dashboard/sync', icon: Database, roles: ['admin'] },
@@ -60,7 +60,7 @@ export default function DashboardLayout({
           </div>
           <nav className="flex flex-col gap-1 p-4">
             {navigation
-              // .filter((item) => item.roles.includes(userRole))
+              .filter((item) => item.roles.includes(userRole))
               .map((item) => {
                 const Icon = item.icon;
                 return (
@@ -91,20 +91,22 @@ export default function DashboardLayout({
             <h1 className="text-2xl font-bold">Task Manager</h1>
           </div>
           <nav className="flex flex-1 flex-col gap-1">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent ${pathname === item.href ? 'bg-accent' : ''
-                    }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  {item.name}
-                </Link>
-              );
-            })}
+            {navigation
+              .filter((item) => item.roles.includes(userRole))
+              .map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent ${pathname === item.href ? 'bg-accent' : ''
+                      }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {item.name}
+                  </Link>
+                );
+              })}
             <Button variant="ghost" className="justify-start gap-2 mt-auto" onClick={() => handleLogout()}>
               <LogOut className="h-5 w-5" />
               Logout
