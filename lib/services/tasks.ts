@@ -191,9 +191,13 @@ export async function cancelTask(
 }
 
 // Base CRUD operations
-export async function getTasks(): Promise<Task[]> {
+export async function getTasks(collaboratorId?: string): Promise<Task[]> {
   try {
-    const response = await api.get('/tasks');
+    const response = await api.get('/tasks', {
+      params: {
+        id_collaborateur: collaboratorId,
+      },
+    });
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for tasks');
@@ -218,9 +222,12 @@ export async function createTask(task: Omit<Task, 'id'>): Promise<Task> {
     const response = await api.post('/tasks', task);
     return response.data;
   } catch (error) {
-    return error.response.data
-
-    // throw new Error('Failed to create task');
+    if (error instanceof Error) {
+      return error.response.data;
+    } else {
+      console.error("An unexpected error occurred:", error);
+      throw new Error('Failed to create task');
+    }
   }
 }
 

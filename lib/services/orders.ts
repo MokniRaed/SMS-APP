@@ -11,6 +11,7 @@ export const OrderLineSchema = z.object({
 });
 
 export const OrderSchema = z.object({
+  _id: z.string().optional(),
   date_cmd: z.string().min(1, 'Date is required'),
   id_client: z.string().min(1, 'Client is required'),
   id_collaborateur: z.string().min(1, 'Collaborator is required'),
@@ -61,9 +62,14 @@ export async function cancelOrder(id: string, reason: string): Promise<Order> {
 }
 
 // Base CRUD operations
-export async function getOrders(): Promise<Order[]> {
+export async function getOrders(clientId?: string, collaboratorId?: string): Promise<Order[]> {
   try {
-    const response = await api.get('/orders');
+    const response = await api.get('/orders', {
+      params: {
+        id_client: clientId,
+        id_collaborateur: collaboratorId,
+      },
+    });
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for orders');

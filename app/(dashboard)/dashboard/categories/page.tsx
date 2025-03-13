@@ -13,6 +13,7 @@ import {
   getCategoriesByType,
   updateCategoriesById
 } from "@/lib/services/categories";
+import { getUserFromLocalStorage } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -68,6 +69,8 @@ export default function SettingsPage() {
   const [editingParameter, setEditingParameter] = useState<Parameter | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const { user } = getUserFromLocalStorage();
+  const userRole = user?.role ?? '';
 
   const [page, setPage] = useState(1);
 
@@ -260,10 +263,12 @@ export default function SettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>{CATEGORY_CONFIG.title}</CardTitle>
-            <Button onClick={() => setIsParameterDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Category
-            </Button>
+            {userRole !== 'collaborateur' && (
+              <Button onClick={() => setIsParameterDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Category
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -315,23 +320,27 @@ export default function SettingsPage() {
                           <TableCell>{param.label}</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setEditingParameter(param);
-                                  setIsParameterDialogOpen(true);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteParameter(param._id!)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {userRole !== 'collaborateur' && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setEditingParameter(param);
+                                      setIsParameterDialogOpen(true);
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteParameter(param._id!)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

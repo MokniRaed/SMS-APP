@@ -1,13 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getClientContacts, deleteClientContact } from '@/lib/services/clients';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, Eye, LayoutGrid, Table as TableIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +10,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { CardSkeleton } from '@/components/ui/skeletons/card-skeleton';
+import { TableSkeleton } from '@/components/ui/skeletons/table-skeleton';
 import {
   Table,
   TableBody,
@@ -26,8 +22,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CardSkeleton } from '@/components/ui/skeletons/card-skeleton';
-import { TableSkeleton } from '@/components/ui/skeletons/table-skeleton';
+import { deleteClientContact, getClientContacts } from '@/lib/services/clients';
+import { getUserFromLocalStorage } from '@/lib/utils';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LayoutGrid, Pencil, Plus, Table as TableIcon, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 type ViewMode = 'grid' | 'table';
 
@@ -36,7 +37,9 @@ export default function ClientContactsPage() {
   const queryClient = useQueryClient();
   const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
-  
+  const { user } = getUserFromLocalStorage();
+  const userRole = user?.role ?? '';
+
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ['clientContacts'],
     queryFn: getClientContacts
@@ -53,7 +56,7 @@ export default function ClientContactsPage() {
       toast.error('Failed to delete contact');
     }
   });
-  console.log("contacts",contacts)
+  console.log("contacts", contacts)
   const renderGridView = () => {
     if (isLoading) {
       return (
@@ -67,7 +70,7 @@ export default function ClientContactsPage() {
 
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {contacts.map((contact,index) => (
+        {contacts.map((contact, index) => (
           <Card key={index}>
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
@@ -90,20 +93,24 @@ export default function ClientContactsPage() {
               </div>
 
               <div className="mt-4 flex justify-end space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDeleteContactId(contact.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {userRole !== 'collaborateur' && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteContactId(contact.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -131,7 +138,7 @@ export default function ClientContactsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {contacts.map((contact,index) => (
+            {contacts.map((contact, index) => (
               <TableRow key={index}>
                 <TableCell className="font-medium">{contact.nom_prenom_contact}</TableCell>
                 <TableCell>{contact?.fonction_contact?.nom_fonc}</TableCell>
@@ -140,20 +147,24 @@ export default function ClientContactsPage() {
                 <TableCell>{contact.canal_interet}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteContactId(contact._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {userRole !== 'collaborateur' && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteContactId(contact._id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -185,10 +196,12 @@ export default function ClientContactsPage() {
               <TableIcon className="h-4 w-4" />
             </Button>
           </div>
-          <Button onClick={() => router.push('/dashboard/clients/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Contact
-          </Button>
+          {userRole !== 'collaborateur' && (
+            <Button onClick={() => router.push('/dashboard/clients/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Contact
+            </Button>
+          )}
         </div>
       </div>
 

@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from '@/components/ui/textarea';
 import { cancelOrder, confirmOrder, deleteOrder, deliverOrder, getOrders, validateOrder } from '@/lib/services/orders';
+import { getUserFromLocalStorage } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowUpDown, BookCopy, Check, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, X } from 'lucide-react';
@@ -41,9 +42,6 @@ import { toast } from 'sonner';
 type ViewMode = 'grid' | 'table';
 type SortField = 'date_cmd' | 'id_client' | 'statut_cmd';
 type SortOrder = 'asc' | 'desc';
-
-// Mock user role - replace with actual auth
-const userRole = 'RESPONSABLE';
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -56,10 +54,12 @@ export default function OrdersPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [showBulkCancelDialog, setShowBulkCancelDialog] = useState(false);
+  const { user } = getUserFromLocalStorage();
+  const userRole = user?.role ?? '';
 
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['orders'],
-    queryFn: getOrders
+    queryKey: ['orders', userRole, user?.id],
+    queryFn: () => getOrders(userRole === 'client' ? user.id : undefined, userRole === 'collaborateur' ? user.id : undefined)
   });
 
   const mutations = {
@@ -118,7 +118,7 @@ export default function OrdersPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedOrders(orders.map(order => order._id));
+      setSelectedOrders(orders.map(order => order._id!));
     } else {
       setSelectedOrders([]);
     }
@@ -192,7 +192,7 @@ export default function OrdersPage() {
   const renderBulkActions = () => {
     if (selectedOrders.length === 0) return null;
 
-    const selectedOrdersData = orders.filter(order => selectedOrders.includes(order._id));
+    const selectedOrdersData = orders.filter(order => selectedOrders.includes(order._id!));
     const allSameStatus = selectedOrdersData.every(order => order.statut_cmd === selectedOrdersData[0].statut_cmd);
     const currentStatus = allSameStatus ? selectedOrdersData[0].statut_cmd : null;
 
@@ -298,21 +298,21 @@ export default function OrdersPage() {
               <TableRow key={index}>
                 <TableCell>
                   <Checkbox
-                    checked={selectedOrders.includes(order._id)}
-                    onCheckedChange={(checked) => handleSelectOrder(order._id, checked as boolean)}
+                    checked={selectedOrders.includes(order._id!)}
+                    onCheckedChange={(checked) => handleSelectOrder(order._id!, checked as boolean)}
                   />
                 </TableCell>
                 <TableCell>#{index}</TableCell>
                 <TableCell>{format(new Date(order.date_cmd), 'PP')}</TableCell>
-                <TableCell>{order.id_client?.nom_prenom_contact}</TableCell>
+                <TableCell>{order.id_client}</TableCell>
                 <TableCell>
                   {order.date_livraison ? format(new Date(order.date_livraison), 'PP') : '-'}
                 </TableCell>
                 {/* <TableCell>{order.articles.length} items</TableCell> */}
-                <TableCell>{order.id_collaborateur.username} items</TableCell>
+                <TableCell>{order.id_collaborateur} items</TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(order.statut_cmd.description)}>
-                    {order.statut_cmd.description}
+                  <Badge className={getStatusColor(order.statut_cmd)}>
+                    {order.statut_cmd}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -337,7 +337,7 @@ export default function OrdersPage() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={() => setDeleteOrderId(order._id)}
+                        onClick={() => setDeleteOrderId(order._id!)}
                         className="text-red-600"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
