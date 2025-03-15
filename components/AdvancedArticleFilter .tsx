@@ -18,18 +18,43 @@ import {
 import { Filter, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const AdvancedArticleFilter = ({ articles, onFilterChange }) => {
+interface Article {
+    art_marque?: string;
+    art_famille?: string;
+    art_cat_niv_1?: string;
+    art_cat_niv_2?: string;
+    art_st?: string;
+    art_tb?: string;
+    art_designation: string;
+    art_id: string;
+}
+
+interface AdvancedArticleFilterProps {
+    articles: Article[];
+    onFilterChange: (filteredArticles: Article[]) => void;
+}
+
+type FilterType =
+    | 'Marque'
+    | 'Famille'
+    | 'Catégorie Niveau 1'
+    | 'Catégorie Niveau 2'
+    | 'Société'
+    | 'TB'
+    | 'Recherche';
+
+const AdvancedArticleFilter = ({ articles, onFilterChange }: AdvancedArticleFilterProps) => {
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeFilters, setActiveFilters] = useState([]);
+    const [activeFilters, setActiveFilters] = useState<{ type: FilterType; value: string }[]>([]);
 
     // Extract unique values for each filter category
-    const uniqueMarques = [...new Set(articles.map(article => article.art_marque))].filter(Boolean);
-    const uniqueFamilles = [...new Set(articles.map(article => article.art_famille))].filter(Boolean);
-    const uniqueNiv1 = [...new Set(articles.map(article => article.art_cat_niv_1))].filter(Boolean);
-    const uniqueNiv2 = [...new Set(articles.map(article => article.art_cat_niv_2))].filter(Boolean);
-    const uniqueST = [...new Set(articles.map(article => article.art_st))].filter(Boolean);
-    const uniqueTB = [...new Set(articles.map(article => article.art_tb))].filter(Boolean);
+    const uniqueMarques = articles.map(article => article.art_marque).filter((value, index, self) => self.indexOf(value) === index && Boolean(value)) as string[];
+    const uniqueFamilles = articles.map(article => article.art_famille).filter((value, index, self) => self.indexOf(value) === index && Boolean(value)) as string[];
+    const uniqueNiv1 = articles.map(article => article.art_cat_niv_1).filter((value, index, self) => self.indexOf(value) === index && Boolean(value)) as string[];
+    const uniqueNiv2 = articles.map(article => article.art_cat_niv_2).filter((value, index, self) => self.indexOf(value) === index && Boolean(value)) as string[];
+    const uniqueST = articles.map(article => article.art_st).filter((value, index, self) => self.indexOf(value) === index && Boolean(value)) as string[];
+    const uniqueTB = articles.map(article => article.art_tb).filter((value, index, self) => self.indexOf(value) === index && Boolean(value)) as string[];
 
     // State for each filter
     const [selectedMarque, setSelectedMarque] = useState('');
@@ -61,7 +86,7 @@ const AdvancedArticleFilter = ({ articles, onFilterChange }) => {
         onFilterChange(filtered);
 
         // Update active filters for display
-        const newActiveFilters = [];
+        const newActiveFilters: { type: FilterType; value: string }[] = [];
         if (selectedMarque) newActiveFilters.push({ type: 'Marque', value: selectedMarque });
         if (selectedFamille) newActiveFilters.push({ type: 'Famille', value: selectedFamille });
         if (selectedNiv1) newActiveFilters.push({ type: 'Catégorie Niveau 1', value: selectedNiv1 });
@@ -84,7 +109,7 @@ const AdvancedArticleFilter = ({ articles, onFilterChange }) => {
         setActiveFilters([]);
     };
 
-    const removeFilter = (filterType) => {
+    const removeFilter = (filterType: FilterType) => {
         switch (filterType) {
             case 'Marque':
                 setSelectedMarque('');
@@ -114,8 +139,8 @@ const AdvancedArticleFilter = ({ articles, onFilterChange }) => {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap gap-2 items-center">
-                <div className="relative flex-grow max-w-md">
+            <div className="flex justify-between gap-2  items-center">
+                <div className="relative flex-grow">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Rechercher par ID ou désignation..."
@@ -129,7 +154,6 @@ const AdvancedArticleFilter = ({ articles, onFilterChange }) => {
                     <DialogTrigger asChild>
                         <Button variant="outline" className="flex items-center gap-2">
                             <Filter className="h-4 w-4" />
-                            Filtres avancés
                             {activeFilters.length > 0 && (
                                 <Badge variant="secondary" className="ml-1">
                                     {activeFilters.length}
@@ -258,11 +282,11 @@ const AdvancedArticleFilter = ({ articles, onFilterChange }) => {
                     </DialogContent>
                 </Dialog>
 
-                {activeFilters.length > 0 && (
+                {activeFilters.length > 0 ? (
                     <Button variant="ghost" size="sm" onClick={clearFilters}>
                         Réinitialiser
                     </Button>
-                )}
+                ) : null}
             </div>
 
             {activeFilters.length > 0 && (
