@@ -298,21 +298,21 @@ export default function OrdersPage() {
               <TableRow key={index}>
                 <TableCell>
                   <Checkbox
-                    checked={selectedOrders.includes(order._id!)}
-                    onCheckedChange={(checked) => handleSelectOrder(order._id!, checked as boolean)}
+                    checked={selectedOrders.includes(order._id)}
+                    onCheckedChange={(checked) => handleSelectOrder(order._id, checked as boolean)}
                   />
                 </TableCell>
                 <TableCell>#{index}</TableCell>
                 <TableCell>{format(new Date(order.date_cmd), 'PP')}</TableCell>
-                <TableCell>{order.id_client}</TableCell>
+                <TableCell>{order.id_client?.nom_prenom_contact}</TableCell>
                 <TableCell>
                   {order.date_livraison ? format(new Date(order.date_livraison), 'PP') : '-'}
                 </TableCell>
                 {/* <TableCell>{order.articles.length} items</TableCell> */}
-                <TableCell>{order.id_collaborateur} items</TableCell>
+                <TableCell>{order.id_collaborateur.username} items</TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(order.statut_cmd)}>
-                    {order.statut_cmd}
+                  <Badge className={getStatusColor(order.statut_cmd.description)}>
+                    {order.statut_cmd.description}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -337,7 +337,7 @@ export default function OrdersPage() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={() => setDeleteOrderId(order._id!)}
+                        onClick={() => setDeleteOrderId(order._id)}
                         className="text-red-600"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
