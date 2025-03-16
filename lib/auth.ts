@@ -28,6 +28,8 @@ export async function verifyToken(token: string) {
 export async function getUser(req?: NextRequest) {
 
   const token = req?.cookies.get('token')?.value;
+  console.log("token ", token);
+
 
   if (!token) return null;
 
