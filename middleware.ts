@@ -20,6 +20,8 @@ const roleAccessMap: { [key: string]: string[] } = {
 export async function middleware(request: NextRequest) {
   const user = await getUser(request);
   const { pathname } = request.nextUrl;
+  console.log("user in mdlware", user);
+
 
   if (!user && !publicPaths.includes(pathname)) {
     return NextResponse.redirect(new URL('/login', request.url));
