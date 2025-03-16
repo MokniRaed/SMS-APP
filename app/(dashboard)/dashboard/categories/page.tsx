@@ -69,7 +69,7 @@ export default function SettingsPage() {
   const [editingParameter, setEditingParameter] = useState<Parameter | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const { user } = getUserFromLocalStorage();
+  const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? '';
 
   const [page, setPage] = useState(1);

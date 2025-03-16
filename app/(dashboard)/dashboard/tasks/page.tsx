@@ -50,7 +50,7 @@ export default function TasksPage() {
   const [sortField, setSortField] = useState<SortField>('date_tache');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
-  const { user } = getUserFromLocalStorage();
+  const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? '';
 
   const { data: tasks = [], isLoading } = useQuery({

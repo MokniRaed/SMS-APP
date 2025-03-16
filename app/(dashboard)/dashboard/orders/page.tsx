@@ -54,7 +54,7 @@ export default function OrdersPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [showBulkCancelDialog, setShowBulkCancelDialog] = useState(false);
-  const { user } = getUserFromLocalStorage();
+  const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? '';
 
   const { data: orders = [], isLoading } = useQuery({

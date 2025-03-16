@@ -36,8 +36,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-// Mock user role - replace with actual auth
-const userRole = 'CLIENT';
+
 
 const OrderLineSchema = z.object({
   id_article: z.string().min(1, 'Article is required'),
@@ -67,7 +66,7 @@ export default function NewOrderPage() {
   const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
   const [articleCategory, setArticleCategory] = useState<string>("all");
   const [filteredArticles, setFilteredArticles] = useState([]);
-  const { user } = getUserFromLocalStorage();
+  const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? '';
 
   const handleFilterChange = (filtered: any) => {
@@ -482,8 +481,8 @@ export default function NewOrderPage() {
                       {/* <TableHead>Category</TableHead> */}
                       {/* <TableHead>Price</TableHead> */}
                       <TableHead>Initial Quantity</TableHead>
-                      <TableHead>Validated</TableHead>
-                      <TableHead>Confirmed</TableHead>
+                      {/* {userRole === 'admin' && <TableHead>Validated</TableHead>} */}
+                      {/* {watchArticles.length > 0 && watchArticles[0]?.quantite_valid > 0 && <TableHead>Confirmed</TableHead>} */}
                       <TableHead>Notes</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
@@ -542,28 +541,32 @@ export default function NewOrderPage() {
                                 </Button>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                min="0"
-                                {...register(`articles.${index}.quantite_valid`, {
-                                  valueAsNumber: true
-                                })}
-                                disabled={isSubmitting}
-                                className="w-20"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                min="0"
-                                {...register(`articles.${index}.quantite_confr`, {
-                                  valueAsNumber: true
-                                })}
-                                disabled={isSubmitting}
-                                className="w-20"
-                              />
-                            </TableCell>
+                            {/* {userRole === 'admin' && (
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  {...register(`articles.${index}.quantite_valid`, {
+                                    valueAsNumber: true
+                                  })}
+                                  disabled={isSubmitting}
+                                  className="w-20"
+                                />
+                              </TableCell>
+                            )} */}
+                            {/* {watchArticles[index]?.quantite_valid > 0 && (
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  {...register(`articles.${index}.quantite_confr`, {
+                                    valueAsNumber: true
+                                  })}
+                                  disabled={isSubmitting}
+                                  className="w-20"
+                                />
+                              </TableCell>
+                            )} */}
                             <TableCell>
                               <Input
                                 {...register(`articles.${index}.notes_cmd`)}

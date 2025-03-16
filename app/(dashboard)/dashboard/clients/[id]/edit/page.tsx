@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 
 export default function EditClientContactPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const { user } = getUserFromLocalStorage();
+  const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? '';
   const [isSubmitting, setIsSubmitting] = useState(false);
 

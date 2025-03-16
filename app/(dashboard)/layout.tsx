@@ -30,8 +30,8 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = getUserFromLocalStorage()
-  const userRole = user.role
+  const { user } = getUserFromLocalStorage() ?? {}
+  const userRole = user?.role
   console.log("userRole", userRole);
 
 

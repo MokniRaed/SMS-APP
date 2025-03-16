@@ -37,7 +37,7 @@ export default function ClientContactsPage() {
   const queryClient = useQueryClient();
   const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
-  const { user } = getUserFromLocalStorage();
+  const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? '';
 
   const { data: contacts = [], isLoading } = useQuery({
