@@ -294,60 +294,67 @@ export default function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedOrders.map((order, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedOrders.includes(order._id)}
-                    onCheckedChange={(checked) => handleSelectOrder(order._id, checked as boolean)}
-                  />
-                </TableCell>
-                <TableCell>#{index}</TableCell>
-                <TableCell>{format(new Date(order.date_cmd), 'PP')}</TableCell>
-                <TableCell>{order.id_client?.nom_prenom_contact}</TableCell>
-                <TableCell>
-                  {order.date_livraison ? format(new Date(order.date_livraison), 'PP') : '-'}
-                </TableCell>
-                {/* <TableCell>{order.articles.length} items</TableCell> */}
-                <TableCell>{order.id_collaborateur.username} items</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(order.statut_cmd.description)}>
-                    {order.statut_cmd.description}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}`)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}/edit`)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}/duplicate`)}>
-                        <BookCopy className="h-4 w-4 mr-2" />
-                        Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => setDeleteOrderId(order._id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {sortedOrders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center">
+                  No Orders found
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              sortedOrders.map((order, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedOrders.includes(order._id)}
+                      onCheckedChange={(checked) => handleSelectOrder(order._id, checked as boolean)}
+                    />
+                  </TableCell>
+                  <TableCell>#{index}</TableCell>
+                  <TableCell>{format(new Date(order.date_cmd), 'PP')}</TableCell>
+                  <TableCell>{order.id_client?.nom_prenom_contact}</TableCell>
+                  <TableCell>
+                    {order.date_livraison ? format(new Date(order.date_livraison), 'PP') : '-'}
+                  </TableCell>
+                  {/* <TableCell>{order.articles.length} items</TableCell> */}
+                  <TableCell>{order.id_collaborateur.username} items</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(order.statut_cmd.description)}>
+                      {order.statut_cmd.description}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}`)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}/edit`)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}/duplicate`)}>
+                          <BookCopy className="h-4 w-4 mr-2" />
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setDeleteOrderId(order._id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              )))}
           </TableBody>
         </Table>
       </div>

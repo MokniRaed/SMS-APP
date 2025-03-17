@@ -47,7 +47,7 @@ export default function ProjectsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [sortField, setSortField] = useState<SortField>('periode_date_debut');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
@@ -394,39 +394,47 @@ export default function ProjectsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedProjects.map((project) => (
-              <TableRow key={project._id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedProjects.includes(project._id)}
-                    onCheckedChange={(checked) => handleSelectProject(project._id, checked as boolean)}
-                  />
+
+            {sortedProjects.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center">
+                  No Projects found
                 </TableCell>
-                <TableCell>
-                  <Badge className={getProjectTypeColor(project.type_projet.nom_type_prj)}>
-                    {project.type_projet.nom_type_prj}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    <div className="font-medium">{project.nom_projet}</div>
-                    <div className="text-sm text-muted-foreground line-clamp-1">
-                      {project.description_projet}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(project.statut_projet.nom_statut_prj.nom_produit_cible)}>
-                    {project.statut_projet.nom_statut_prj}
-                  </Badge>
-                </TableCell>
-                <TableCell>{project.zone_cible.sous_Zone_cible || '-'}</TableCell>
-                <TableCell>{format(new Date(project.periode_date_debut), 'MMM d, yyyy')}</TableCell>
-                <TableCell>{format(new Date(project.periode_date_fin), 'MMM d, yyyy')}</TableCell>
-                <TableCell>${project.objectif_ca?.toLocaleString() || '-'}</TableCell>
-                <TableCell>{renderTableActions(project)}</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              sortedProjects.map((project) => (
+                <TableRow key={project._id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedProjects.includes(project._id)}
+                      onCheckedChange={(checked) => handleSelectProject(project._id, checked as boolean)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getProjectTypeColor(project.type_projet.nom_type_prj)}>
+                      {project.type_projet.nom_type_prj}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="font-medium">{project.nom_projet}</div>
+                      <div className="text-sm text-muted-foreground line-clamp-1">
+                        {project.description_projet}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(project.statut_projet.nom_statut_prj.nom_produit_cible)}>
+                      {project.statut_projet.nom_statut_prj}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{project.zone_cible.sous_Zone_cible || '-'}</TableCell>
+                  <TableCell>{format(new Date(project.periode_date_debut), 'MMM d, yyyy')}</TableCell>
+                  <TableCell>{format(new Date(project.periode_date_fin), 'MMM d, yyyy')}</TableCell>
+                  <TableCell>${project.objectif_ca?.toLocaleString() || '-'}</TableCell>
+                  <TableCell>{renderTableActions(project)}</TableCell>
+                </TableRow>
+              )))}
           </TableBody>
         </Table>
       </div>

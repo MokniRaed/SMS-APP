@@ -73,7 +73,7 @@ export async function getOrders(clientId?: string, collaboratorId?: string): Pro
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for orders');
-    return mockOrders;
+    return [];
   }
 
 

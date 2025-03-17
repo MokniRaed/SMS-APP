@@ -673,7 +673,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                                     {(
                                                         <TableCell>
                                                             <div className="flex items-center space-x-2">
-                                                                {canEdit() && userRole === 'admin' && (
+                                                                {canEdit() && userRole === 'admin' && line.quantite_confr < 1 && (
                                                                     <Button
                                                                         type="button"
                                                                         variant="outline"
@@ -687,7 +687,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                                                 <span className="w-12 text-center">
                                                                     {line.quantite_valid || 0}
                                                                 </span>
-                                                                {canEdit() && userRole === 'admin' && (
+                                                                {canEdit() && userRole === 'admin' && line.quantite_confr < 1 && (
                                                                     <Button
                                                                         type="button"
                                                                         variant="outline"
@@ -704,21 +704,29 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                                     {(
                                                         <TableCell>
                                                             <div className="flex items-center space-x-2">
-                                                                {(['CLIENT', 'COLLABORATEUR'].includes(userRole) && line.quantite_valid > 0) ? (
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="outline"
-                                                                        size="icon"
-                                                                        onClick={() => handleQuantityChange(index, -1, 'quantite_confr')}
-                                                                        disabled={isSubmitting}
-                                                                    >
-                                                                        <Minus className="h-4 w-4" />
-                                                                    </Button>
-                                                                ) : null}
-                                                                <span className="w-12 text-center">
-                                                                    {line.quantite_confr || 0}
-                                                                </span>
-                                                                {(['CLIENT', 'COLLABORATEUR'].includes(userRole) && line.quantite_valid > 0) ? (
+
+                                                                {
+                                                                    ['collaborateur', 'client'].includes(userRole) && line.quantite_valid > 0 && line.quantite_confr < 1 && (
+
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            size="icon"
+                                                                            onClick={() => handleQuantityChange(index, -1, 'quantite_confr')}
+                                                                            disabled={isSubmitting}
+                                                                        >
+                                                                            <Minus className="h-4 w-4" />
+                                                                        </Button>
+                                                                    )}
+                                                                {
+                                                                    (['collaborateur', 'client'].includes(userRole) && line.quantite_valid > 0) || userRole === 'admin' ? (
+                                                                        <span className="w-12 text-center">
+                                                                            {line.quantite_confr || 0}
+                                                                        </span>
+                                                                    ) : null
+                                                                }
+
+                                                                {['collaborateur', 'client'].includes(userRole) && line.quantite_valid > 0 && line.quantite_confr < 1 && (
                                                                     <Button
                                                                         type="button"
                                                                         variant="outline"
@@ -728,7 +736,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                                                     >
                                                                         <Plus className="h-4 w-4" />
                                                                     </Button>
-                                                                ) : null}
+                                                                )}
                                                             </div>
                                                         </TableCell>
                                                     )}

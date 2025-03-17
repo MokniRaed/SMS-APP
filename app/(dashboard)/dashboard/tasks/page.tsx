@@ -283,35 +283,42 @@ export default function TasksPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedTasks.map((task, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedTasks.includes(task._id)}
-                    onCheckedChange={(checked) => handleSelectTask(task._id, checked as boolean)}
-                  />
+            {sortedTasks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center">
+                  No Tasks found
                 </TableCell>
-                <TableCell className="font-medium">{task.title_tache}</TableCell>
-                <TableCell>{task.type_tache?.nom_type_tch}</TableCell>
-                {/*<TableCell>{getTaskTypeName(task.type_tache)}</TableCell>*/}
-                <TableCell>{format(new Date(task.date_tache), 'MMM dd, yyyy')}</TableCell>
-                <TableCell>
-                  {task.date_execution_tache ?
-                    format(new Date(task.date_execution_tache), 'MMM dd, yyyy') :
-                    '-'
-                  }
-                </TableCell>
-                <TableCell>{task?.id_client.id_client}-{task?.id_client.nom_prenom_contact}</TableCell>
-                <TableCell>{task?.id_collaborateur.username}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(task.statut_tache)}`}>
-                    {task.statut_tache.nom_statut_tch}
-                    {/* {getTaskStatusName(task.statut_tache.nom_statut_tch)} */}
-                  </span>
-                </TableCell>
-                <TableCell>{renderTableActions(task)}</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              sortedTasks.map((task, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedTasks.includes(task._id)}
+                      onCheckedChange={(checked) => handleSelectTask(task._id, checked as boolean)}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{task.title_tache}</TableCell>
+                  <TableCell>{task.type_tache?.nom_type_tch}</TableCell>
+                  {/*<TableCell>{getTaskTypeName(task.type_tache)}</TableCell>*/}
+                  <TableCell>{format(new Date(task.date_tache), 'MMM dd, yyyy')}</TableCell>
+                  <TableCell>
+                    {task.date_execution_tache ?
+                      format(new Date(task.date_execution_tache), 'MMM dd, yyyy') :
+                      '-'
+                    }
+                  </TableCell>
+                  <TableCell>{task?.id_client.id_client}-{task?.id_client.nom_prenom_contact}</TableCell>
+                  <TableCell>{task?.id_collaborateur.username}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(task.statut_tache)}`}>
+                      {task.statut_tache.nom_statut_tch}
+                      {/* {getTaskStatusName(task.statut_tache.nom_statut_tch)} */}
+                    </span>
+                  </TableCell>
+                  <TableCell>{renderTableActions(task)}</TableCell>
+                </TableRow>
+              )))}
           </TableBody>
         </Table>
       </div>
