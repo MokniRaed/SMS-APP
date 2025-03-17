@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getUser } from './lib/auth';
+import { getUser, verifyToken } from './lib/auth';
 
 const publicPaths = ['/login', '/signup'];
 
@@ -21,6 +21,9 @@ export async function middleware(request: NextRequest) {
   // console.log('Cookies in Middleware:', request.cookies);
 
   const user = await getUser(request);
+  const token = request?.cookies.get('_vercel_jwt')?.value;
+
+  const isToken = verifyToken(token)
 
   const { pathname } = request.nextUrl;
   console.log("user in mdlware", user);
@@ -29,6 +32,9 @@ export async function middleware(request: NextRequest) {
   // if (!user && !publicPaths.includes(pathname)) {
   //   return NextResponse.redirect(new URL('/login', request.url));
   // }
+  if (!isToken && !publicPaths.includes(pathname)) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
 
   if (user && typeof pathname === 'string') {
     const path = pathname as keyof typeof roleAccessMap;
