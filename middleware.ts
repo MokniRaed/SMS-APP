@@ -26,9 +26,9 @@ export async function middleware(request: NextRequest) {
   console.log("user in mdlware", user);
 
 
-  if (!user && !publicPaths.includes(pathname)) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // if (!user && !publicPaths.includes(pathname)) {
+  //   return NextResponse.redirect(new URL('/login', request.url));
+  // }
 
   if (user && typeof pathname === 'string') {
     const path = pathname as keyof typeof roleAccessMap;
