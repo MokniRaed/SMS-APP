@@ -2,7 +2,7 @@ import { jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
 import api from './axios';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-here');
 
 export interface User {
   id: string;
@@ -38,6 +38,8 @@ export async function getUser(req?: NextRequest) {
   if (!token) return null;
 
   const payload = await verifyToken(token);
+  console.log("payload", payload);
+
 
   return payload;
 }
