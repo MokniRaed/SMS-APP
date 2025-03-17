@@ -28,7 +28,7 @@ export async function verifyToken(token: string) {
 export async function getUser(req?: NextRequest) {
   console.log('getUser Cookies:', req.cookies.getAll());
 
-  const token = req?.cookies.get('token')?.value;
+  const token = req?.cookies.get('_vercel_jwt')?.value;
   console.log("token ", token);
 
 
