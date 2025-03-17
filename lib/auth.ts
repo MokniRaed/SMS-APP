@@ -19,6 +19,8 @@ export interface AuthResponse {
 export async function verifyToken(token: string) {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
+    console.log("JWT_SECRET", JWT_SECRET);
+
     return payload;
   } catch (error) {
     return null;
