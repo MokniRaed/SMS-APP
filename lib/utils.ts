@@ -56,8 +56,8 @@ export const getCurrentUserId = () => {
     // Check if localStorage exists and get user data
     const userData = localStorage.getItem("user");
 
-    const { user } = userData ? JSON.parse(userData) : null;
-    return user.id
+    const { user } = userData ? JSON.parse(userData) : {};
+    return user?.id
   }
   return null;
 };

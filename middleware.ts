@@ -18,7 +18,10 @@ const roleAccessMap: { [key: string]: string[] } = {
 };
 
 export async function middleware(request: NextRequest) {
+  console.log('Cookies in Middleware:', request.cookies);
+
   const user = await getUser(request);
+
   const { pathname } = request.nextUrl;
   console.log("user in mdlware", user);
 
