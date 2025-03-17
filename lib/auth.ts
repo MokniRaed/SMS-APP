@@ -2,7 +2,7 @@ import { jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
 import api from './axios';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-here');
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
 export interface User {
   id: string;
