@@ -163,10 +163,10 @@ export default function OrdersPage() {
         comparison = new Date(a.date_cmd).getTime() - new Date(b.date_cmd).getTime();
         break;
       case 'id_client':
-        comparison = a.id_client.localeCompare(b.id_client);
+        comparison = (a.id_client?.nom_prenom_contact || '').localeCompare(b.id_client?.nom_prenom_contact || '');
         break;
       case 'statut_cmd':
-        comparison = a.statut_cmd.localeCompare(b.statut_cmd);
+        comparison = (a.statut_cmd?.description || '').localeCompare(b.statut_cmd?.description || '');
         break;
     }
     return sortOrder === 'asc' ? comparison : -comparison;
