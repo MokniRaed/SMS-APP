@@ -144,13 +144,13 @@ export default function ProjectsPage() {
     let comparison = 0;
     switch (sortField) {
       case 'type_projet':
-        comparison = a.type_projet.localeCompare(b.type_projet);
+        comparison = (a.type_projet?.nom_type_prj || '').localeCompare(b.type_projet?.nom_type_prj || '');
         break;
       case 'produit_cible':
-        comparison = (a.produit_cible || '').localeCompare(b.produit_cible.nom_produit_cible || '');
+        comparison = (a.produit_cible?.nom_produit_cible || '').localeCompare(b.produit_cible?.nom_produit_cible || '');
         break;
       case 'statut_projet':
-        comparison = a.statut_projet.localeCompare(b.statut_projet.nom_statut_prj);
+        comparison = (a.statut_projet?.nom_statut_prj || '').localeCompare(b.statut_projet?.nom_statut_prj || '');
         break;
       case 'periode_date_debut':
         comparison = new Date(a.periode_date_debut).getTime() - new Date(b.periode_date_debut).getTime();
