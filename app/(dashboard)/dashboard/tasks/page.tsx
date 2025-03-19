@@ -84,20 +84,28 @@ export default function TasksPage() {
     }
   });
 
+  const getTaskTypeName = (typeId: string) => {
+    console.log("typeId", typeId)
+    return taskTypes.find(t => t.id === typeId)?.nom_type_tch || 'Unknown';
+  };
+
   const sortedTasks = [...tasks].sort((a, b) => {
     let comparison = 0;
     switch (sortField) {
       case 'title_tache':
         comparison = a.title_tache.localeCompare(b.title_tache);
         break;
-      case 'type_tache':
-        comparison = a.type_tache.localeCompare(b.type_tache);
+      case 'type_tache': {
+        const typeA = (a.type_tache?.id || '').toString();
+        const typeB = (b.type_tache?.id || '').toString();
+        comparison = getTaskTypeName(typeA).localeCompare(getTaskTypeName(typeB));
         break;
+      }
       case 'date_tache':
         comparison = new Date(a.date_tache).getTime() - new Date(b.date_tache).getTime();
         break;
       case 'statut_tache':
-        comparison = a.statut_tache.localeCompare(b.statut_tache);
+        comparison = (a.statut_tache?.nom_statut_tch || '').localeCompare(b.statut_tache?.nom_statut_tch || '');
         break;
     }
     return sortOrder === 'asc' ? comparison : -comparison;
@@ -170,11 +178,6 @@ export default function TasksPage() {
       'ANNULEE': 'bg-red-100 text-red-800'
     };
     return colors[statusId as keyof typeof colors] || colors['SAISIE'];
-  };
-
-  const getTaskTypeName = (typeId: string) => {
-    console.log("typeId", typeId)
-    return taskTypes.find(t => t.id === typeId)?.nom_type_tch || 'Unknown';
   };
 
   const getTaskStatusName = (statusId: string) => {
