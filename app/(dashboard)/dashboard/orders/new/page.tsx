@@ -49,7 +49,7 @@ const OrderLineSchema = z.object({
 
 const OrderSchema = z.object({
   id_client: z.string().min(1, 'Client is required'),
-  id_collaborateur: z.string().min(1, 'Collaborator is required'),
+  id_collaborateur: z.string().optional(),
   date_cmd: z.string().min(1, 'Date is required'),
   notes_cmd: z.string().optional(),
   articles: z.array(OrderLineSchema).min(1, 'At least one article is required'),
@@ -184,6 +184,13 @@ export default function NewOrderPage() {
   };
 
   const onSubmit = async (data: OrderForm) => {
+
+    if (userRole !== 'client' && (!data.id_collaborateur || data.id_collaborateur.length === 0)) {
+      toast.error('Collaborator is required');
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/orders', {
@@ -236,45 +243,54 @@ export default function NewOrderPage() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Collaborator</label>
-                <Select
-                  onValueChange={(value) => setValue('id_collaborateur', value)}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Collaborateur" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {collaborators.map((collaborator) => (
-                      <SelectItem key={collaborator._id} value={collaborator._id}>
-                        {collaborator.username}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.id_collaborateur && (
-                  <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>
-                )}
-              </div>
+              {userRole !== 'client' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Collaborator</label>
+                  <Select
+                    onValueChange={(value) => setValue('id_collaborateur', value)}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Collaborateur" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {collaborators.map((collaborator) => (
+                        <SelectItem key={collaborator._id} value={collaborator._id}>
+                          {collaborator.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.id_collaborateur && (
+                    <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Client</label>
-                <Select
-                  onValueChange={(value) => setValue('id_client', value)}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client._id} value={client._id}>
-                        {client.nom_prenom_contact}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {userRole === 'client' ? (
+                  <>
+                    <p className="text-sm">{user?.clientId}</p>
+                    <Input type="hidden" {...register('id_client')} defaultValue={user?.clientId} />
+                  </>
+                ) : (
+                  <Select
+                    onValueChange={(value) => setValue('id_client', value)}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem key={client._id} value={client.id_client}>
+                          {client.nom_prenom_contact}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 {errors.id_client && (
                   <p className="text-sm text-red-500">{errors.id_client.message}</p>
                 )}

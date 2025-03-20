@@ -64,6 +64,8 @@ export async function cancelOrder(id: string, reason: string): Promise<Order> {
 // Base CRUD operations
 export async function getOrders(clientId?: string, collaboratorId?: string): Promise<Order[]> {
   try {
+    console.log("clientId", clientId);
+
     const response = await api.get('/orders', {
       params: {
         id_client: clientId,

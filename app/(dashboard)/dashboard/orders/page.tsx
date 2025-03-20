@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -34,7 +35,7 @@ import { cancelOrder, confirmOrder, deleteOrder, deliverOrder, getOrders, valida
 import { getUserFromLocalStorage } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { ArrowUpDown, BookCopy, Check, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, X } from 'lucide-react';
+import { ArrowUpDown, BookCopy, Check, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -59,8 +60,10 @@ export default function OrdersPage() {
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['orders', userRole, user?.id],
-    queryFn: () => getOrders(userRole === 'client' ? user.id : undefined, userRole === 'collaborateur' ? user.id : undefined)
+    queryFn: () => getOrders(userRole === 'client' ? user.clientId : undefined, userRole === 'collaborateur' ? user.id : undefined)
   });
+  console.log("user", user);
+
 
   const mutations = {
     delete: useMutation({
@@ -196,7 +199,14 @@ export default function OrdersPage() {
     const allSameStatus = selectedOrdersData.every(order => order.statut_cmd === selectedOrdersData[0].statut_cmd);
     const currentStatus = allSameStatus ? selectedOrdersData[0].statut_cmd : null;
 
-    return (
+    const hasActions =
+      (userRole === 'RESPONSABLE' && currentStatus === 'VALIDATION') ||
+      (['CLIENT', 'COLLABORATEUR'].includes(userRole) && currentStatus === 'VALIDATED') ||
+      (userRole === 'RESPONSABLE' && currentStatus === 'CONFIRMED') ||
+      (userRole === 'RESPONSABLE' && ['VALIDATED', 'CONFIRMED'].includes(currentStatus || '')) ||
+      (userRole !== 'client');
+
+    return selectedOrders.length > 0 && hasActions ? (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline">
@@ -229,16 +239,18 @@ export default function OrdersPage() {
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => handleBulkAction('delete')}
-            className="text-red-600"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Selected
-          </DropdownMenuItem>
+          {userRole !== 'client' && (
+            <DropdownMenuItem
+              onClick={() => handleBulkAction('delete')}
+              className="text-red-600"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Selected
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
-    );
+    ) : null;
   };
 
   const renderTableView = () => {
@@ -316,10 +328,10 @@ export default function OrdersPage() {
                     {order.date_livraison ? format(new Date(order.date_livraison), 'PP') : '-'}
                   </TableCell>
                   {/* <TableCell>{order.articles.length} items</TableCell> */}
-                  <TableCell>{order.id_collaborateur.username} items</TableCell>
+                  <TableCell>{order?.id_collaborateur?.username} items</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(order.statut_cmd.description)}>
-                      {order.statut_cmd.description}
+                    <Badge className={getStatusColor(order.statut_cmd?.description)}>
+                      {order?.statut_cmd?.description}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -330,10 +342,10 @@ export default function OrdersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}`)}>
+                        {/* <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}`)}>
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuItem onClick={() => router.push(`/dashboard/orders/${order._id}/edit`)}>
                           <Pencil className="h-4 w-4 mr-2" />
                           Edit
@@ -342,21 +354,69 @@ export default function OrdersPage() {
                           <BookCopy className="h-4 w-4 mr-2" />
                           Duplicate
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setDeleteOrderId(order._id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
+                        {userRole !== 'client' && (
+                          <>
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                              onClick={() => setDeleteOrderId(order._id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
+
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
               )))}
           </TableBody>
         </Table>
+      </div>
+    );
+  };
+
+  const renderCardView = () => {
+    if (isLoading) {
+      return <TableSkeleton columnCount={8} />;
+    }
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {sortedOrders.map((order) => (
+          <Card
+            key={order._id}
+            className="relative overflow-hidden"
+          >
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-semibold text-lg">Order #{order._id}</h3>
+                  <p className="text-sm text-muted-foreground">Client: {order.id_client?.nom_prenom_contact}</p>
+                </div>
+                <Badge className={getStatusColor(order.statut_cmd?.description)}>
+                  {order?.statut_cmd?.description}
+                </Badge>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Status: {order?.statut_cmd?.description}</p>
+                {order.id_collaborateur && (
+                  <p className="text-sm text-muted-foreground">Collaborator: {order.id_collaborateur.username}</p>
+                )}
+                {order.date_livraison && (
+                  <p className="text-sm text-muted-foreground">Delivery Date: {format(new Date(order.date_livraison), 'MMM dd, yyyy')}</p>
+                )}
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                  <span>Date: {format(new Date(order.date_cmd), 'MMM dd, yyyy')}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   };
@@ -390,7 +450,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {viewMode === 'table' ? renderTableView() : null}
+      {viewMode === 'table' ? renderTableView() : (viewMode === 'grid' ? renderCardView() : null)}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteOrderId} onOpenChange={() => setDeleteOrderId(null)}>

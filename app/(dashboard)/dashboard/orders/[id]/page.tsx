@@ -88,6 +88,9 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         queryFn: getClientContacts
     });
 
+    console.log("clients", clients);
+
+
     const { data: collaborators = [] } = useQuery({
         queryKey: ['collaborators'],
         queryFn: () => getUsersByRole("679694ee22268f25bdfcba23")
@@ -248,7 +251,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {clients.map((client) => (
-                                            <SelectItem key={client._id} value={client._id}>
+                                            <SelectItem key={client._id} value={client.id_client}>
                                                 {client.nom_prenom_contact}
                                             </SelectItem>
                                         ))}

@@ -47,7 +47,7 @@ export default function ProjectsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortField, setSortField] = useState<SortField>('periode_date_debut');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
@@ -144,13 +144,13 @@ export default function ProjectsPage() {
     let comparison = 0;
     switch (sortField) {
       case 'type_projet':
-        comparison = (a.type_projet?.nom_type_prj || '').localeCompare(b.type_projet?.nom_type_prj || '');
+        comparison = a.type_projet.localeCompare(b.type_projet);
         break;
       case 'produit_cible':
-        comparison = (a.produit_cible?.nom_produit_cible || '').localeCompare(b.produit_cible?.nom_produit_cible || '');
+        comparison = (a.produit_cible || '').localeCompare(b.produit_cible.nom_produit_cible || '');
         break;
       case 'statut_projet':
-        comparison = (a.statut_projet?.nom_statut_prj || '').localeCompare(b.statut_projet?.nom_statut_prj || '');
+        comparison = a.statut_projet.localeCompare(b.statut_projet.nom_statut_prj);
         break;
       case 'periode_date_debut':
         comparison = new Date(a.periode_date_debut).getTime() - new Date(b.periode_date_debut).getTime();
@@ -292,7 +292,7 @@ export default function ProjectsPage() {
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin className="h-4 w-4" />
-                      <span>{project.zone_cible.sous_Zone_cible || 'No zone specified'}</span>
+                      <span>{project.zone_cible?.sous_Zone_cible || 'No zone specified'}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -425,12 +425,12 @@ export default function ProjectsPage() {
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(project.statut_projet.nom_statut_prj.nom_produit_cible)}>
-                      {project.statut_projet.nom_statut_prj}
+                      {project.statut_projet?.nom_statut_prj}
                     </Badge>
                   </TableCell>
-                  <TableCell>{project.zone_cible.sous_Zone_cible || '-'}</TableCell>
-                  <TableCell>{format(new Date(project.periode_date_debut), 'MMM d, yyyy')}</TableCell>
-                  <TableCell>{format(new Date(project.periode_date_fin), 'MMM d, yyyy')}</TableCell>
+                  <TableCell>{project?.zone_cible?.sous_Zone_cible || '-'}</TableCell>
+                  <TableCell>{format(new Date(project?.periode_date_debut), 'MMM d, yyyy')}</TableCell>
+                  <TableCell>{format(new Date(project?.periode_date_fin), 'MMM d, yyyy')}</TableCell>
                   <TableCell>${project.objectif_ca?.toLocaleString() || '-'}</TableCell>
                   <TableCell>{renderTableActions(project)}</TableCell>
                 </TableRow>

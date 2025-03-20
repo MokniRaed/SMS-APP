@@ -44,7 +44,7 @@ const OrderLineSchema = z.object({
 
 const OrderSchema = z.object({
     id_client: z.string().min(1, 'Client is required'),
-    id_collaborateur: z.string().min(1, 'Collaborator is required'),
+    id_collaborateur: z.string().optional(),
     date_cmd: z.string().min(1, 'Date is required'),
     date_livraison: z.string().optional(),
     notes_cmd: z.string().optional(),
@@ -299,6 +299,13 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         console.log("data", data);
 
         setIsSubmitting(true);
+
+        if (userRole !== 'client' && (!data.id_collaborateur || data.id_collaborateur.length === 0)) {
+            toast.error('Collaborator is required');
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             // Validate quantities based on user role
             if (userRole === 'admin') {
@@ -385,47 +392,56 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Collaborator</label>
-                                <Select
-                                    defaultValue={order.id_collaborateur}
-                                    onValueChange={(value) => setValue('id_collaborateur', value)}
-                                    disabled={!canEdit() || isSubmitting}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select collaborator" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {collaborators.map((collaborator) => (
-                                            <SelectItem key={collaborator._id} value={collaborator._id}>
-                                                {collaborator.username}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.id_collaborateur && (
-                                    <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>
-                                )}
-                            </div>
+                            {userRole !== 'client' && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Collaborator</label>
+                                    <Select
+                                        defaultValue={order.id_collaborateur}
+                                        onValueChange={(value) => setValue('id_collaborateur', value)}
+                                        disabled={!canEdit() || isSubmitting}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select collaborator" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {collaborators.map((collaborator) => (
+                                                <SelectItem key={collaborator._id} value={collaborator._id}>
+                                                    {collaborator.username}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.id_collaborateur && (
+                                        <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Client</label>
-                                <Select
-                                    defaultValue={order.id_client}
-                                    onValueChange={(value) => setValue('id_client', value)}
-                                    disabled={!canEdit() || isSubmitting}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select client" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {clients.map((client) => (
-                                            <SelectItem key={client._id} value={client._id}>
-                                                {client.nom_prenom_contact}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                {userRole === 'client' ? (
+                                    <>
+                                        <p className="text-sm">{user?.clientId}</p>
+                                        <Input type="hidden" {...register('id_client')} defaultValue={user?.clientId} />
+                                    </>
+                                ) : (
+                                    <Select
+                                        defaultValue={order.id_client}
+                                        onValueChange={(value) => setValue('id_client', value)}
+                                        disabled={!canEdit() || isSubmitting}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select client" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {clients.map((client) => (
+                                                <SelectItem key={client._id} value={client.id_client}>
+                                                    {client.nom_prenom_contact}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                                 {errors.id_client && (
                                     <p className="text-sm text-red-500">{errors.id_client.message}</p>
                                 )}
@@ -706,7 +722,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                                             <div className="flex items-center space-x-2">
 
                                                                 {
-                                                                    ['collaborateur', 'client'].includes(userRole) && line.quantite_valid > 0 && line.quantite_confr < 1 && (
+                                                                    ['collaborateur', 'client'].includes(userRole) && line.quantite_valid > 0 && (
 
                                                                         <Button
                                                                             type="button"
@@ -719,14 +735,14 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                                                         </Button>
                                                                     )}
                                                                 {
-                                                                    (['collaborateur', 'client'].includes(userRole) && line.quantite_valid > 0) || userRole === 'admin' ? (
+                                                                    (['collaborateur', 'client'].includes(userRole) && line.quantite_valid > 0) || (userRole === 'admin' && line.quantite_confr > 0) ? (
                                                                         <span className="w-12 text-center">
                                                                             {line.quantite_confr || 0}
                                                                         </span>
                                                                     ) : null
                                                                 }
 
-                                                                {['collaborateur', 'client'].includes(userRole) && line.quantite_valid > 0 && line.quantite_confr < 1 && (
+                                                                {['collaborateur', 'client'].includes(userRole) && line.quantite_valid > 0 && (
                                                                     <Button
                                                                         type="button"
                                                                         variant="outline"

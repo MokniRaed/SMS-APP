@@ -27,6 +27,7 @@ import { getArticles } from '@/lib/services/articles';
 import { getClientContacts } from '@/lib/services/clients';
 import { createOrder, getAllStatusArtCmd, getAllStatusCmd, getLineCommandsByOrder, getOrder, OrderSchema, type Order } from '@/lib/services/orders';
 import { getUsersByRole } from '@/lib/services/users';
+import { getUserFromLocalStorage } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Minus, Plus, Search, Trash2 } from 'lucide-react';
@@ -35,8 +36,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-// Mock user role - replace with actual auth
-const userRole = 'RESPONSABLE';
+
 
 export default function DuplicateOrderPage({ params }: { params: { id: string } }) {
     const router = useRouter();
@@ -46,6 +46,8 @@ export default function DuplicateOrderPage({ params }: { params: { id: string } 
     const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
     const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
     const [articleCategory, setArticleCategory] = useState<string>("all");
+    const { user } = getUserFromLocalStorage() ?? {};
+    const userRole = user?.role ?? '';
 
     const { data: order, isLoading: orderLoading } = useQuery({
         queryKey: ['order', params.id],
@@ -359,7 +361,7 @@ export default function DuplicateOrderPage({ params }: { params: { id: string } 
                                     </SelectTrigger>
                                     <SelectContent>
                                         {clients.map((client) => (
-                                            <SelectItem key={client._id} value={client._id}>
+                                            <SelectItem key={client._id} value={client.id_client}>
                                                 {client.nom_prenom_contact}
                                             </SelectItem>
                                         ))}
@@ -378,7 +380,7 @@ export default function DuplicateOrderPage({ params }: { params: { id: string } 
                                     type="date"
                                     defaultValue={new Date(order.date_cmd).toISOString().split('T')[0]}
                                     {...register('date_cmd')}
-                                    disabled={!canEdit() || isSubmitting}
+                                    disabled={isSubmitting}
                                 />
                                 {errors.date_cmd && (
                                     <p className="text-sm text-red-500">{errors.date_cmd.message}</p>
@@ -389,7 +391,7 @@ export default function DuplicateOrderPage({ params }: { params: { id: string } 
                                 <label className="text-sm font-medium">Delivery Date</label>
                                 <Input
                                     type="date"
-                                    defaultValue={order.date_livraison ? new Date(order.date_livraison).toISOString().split('T')[0] : undefined}
+                                    defaultValue={order.date_livraison ? new Date(order.date_livraison).toISOString().split('T')[0] : ""}
                                     {...register('date_livraison')}
                                     disabled={!canEdit() || isSubmitting}
                                 />
@@ -570,7 +572,7 @@ export default function DuplicateOrderPage({ params }: { params: { id: string } 
                                                         </TableCell>
                                                         <TableCell>
                                                             <div className="flex items-center space-x-2">
-                                                                {canEdit() && (
+                                                                {(
                                                                     <Button
                                                                         type="button"
                                                                         variant="outline"
@@ -584,7 +586,7 @@ export default function DuplicateOrderPage({ params }: { params: { id: string } 
                                                                 <span className="w-12 text-center">
                                                                     {line.quantite_cmd}
                                                                 </span>
-                                                                {canEdit() && (
+                                                                {(
                                                                     <Button
                                                                         type="button"
                                                                         variant="outline"
@@ -600,7 +602,7 @@ export default function DuplicateOrderPage({ params }: { params: { id: string } 
                                                         {userRole === 'RESPONSABLE' && (
                                                             <TableCell>
                                                                 <div className="flex items-center space-x-2">
-                                                                    {canEdit() && (
+                                                                    {canEdit() && userRole === 'admin' && line.quantite_confr < 1 && (
                                                                         <Button
                                                                             type="button"
                                                                             variant="outline"
@@ -714,7 +716,7 @@ export default function DuplicateOrderPage({ params }: { params: { id: string } 
                             >
                                 Cancel
                             </Button>
-                            {canEdit() && (
+                            {(
                                 <Button type="submit" disabled={isSubmitting}>
                                     {isSubmitting ? (
                                         <>
