@@ -7,21 +7,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getTasks, Task, taskStatuses } from '@/lib/services/tasks';
+import { getUserFromLocalStorage } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { eachDayOfInterval, endOfMonth, format, isSameDay, startOfMonth } from 'date-fns';
+import { eachDayOfInterval, endOfMonth, format, isSameDay, isWithinInterval, startOfMonth } from 'date-fns';
 import { CalendarDays, ChevronLeft, ChevronRight, MapPin, Plus, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+
+const ITEMS_PER_PAGE = 5;
 
 export default function TaskCalendarPage() {
   const router = useRouter();
   const [date, setDate] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const { user } = getUserFromLocalStorage() ?? {};
+  const userRole = user?.role ?? '';
+  const roleId = userRole === 'collaborateur' ? { collaboratorId: user.id } : { adminId: user.id }
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: getTasks
+  const { data: tasksData = [], isLoading } = useQuery({
+    queryKey: ['tasks', userRole, user?.id, currentPage],
+    queryFn: () => getTasks({ ...roleId, page: currentPage, limit: ITEMS_PER_PAGE }),
   });
+
+  const tasks = tasksData?.data || [];
 
   const getTasksForDate = (date: Date) => {
     return tasks.filter(task => {
@@ -30,14 +40,20 @@ export default function TaskCalendarPage() {
     });
   };
 
+  // const getTasksForMonth = async (date: Date) => {
+  //   const start = startOfMonth(date);
+  //   const end = endOfMonth(date);
+  //   const roleId = userRole === 'collaborateur' ? { collaboratorId: user.id } : { adminId: user.id }
+  //   const tasks = await getTasks({ ...roleId, start: start.toISOString(), end: end.toISOString() });
+  //   return tasks;
+  // };
   const getTasksForMonth = (date: Date) => {
     const start = startOfMonth(date);
     const end = endOfMonth(date);
-    const { data: tasks = [] } = useQuery({
-      queryKey: ['tasks', date],
-      queryFn: () => getTasks({ start: start.toISOString(), end: end.toISOString() }),
+    return tasks.filter(task => {
+      const taskDate = new Date(task.date_tache);
+      return isWithinInterval(taskDate, { start, end });
     });
-    return tasks;
   };
 
   const getStatusColor = (statusId: string) => {
@@ -73,16 +89,16 @@ export default function TaskCalendarPage() {
 
   const renderTaskCard = (task: Task) => (
     <Card
-      key={task._id}
+      key={task?._id}
       className="cursor-pointer hover:shadow-md transition-shadow mb-4"
-      onClick={() => router.push(`/dashboard/tasks/${task._id}`)}
+      onClick={() => router.push(`/dashboard/tasks/${task?._id}`)}
     >
       <CardContent className="p-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-medium">{task.title_tache}</h3>
             <Badge className={getStatusColor(task.statut_tache)}>
-              {task.statut_tache.nom_statut_tch}
+              {task.statut_tache?.nom_statut_tch}
             </Badge>
           </div>
           {task.description_tache && (
@@ -97,7 +113,7 @@ export default function TaskCalendarPage() {
             </div>
             <div className="flex items-center gap-1">
               <User className="h-3 w-3" />
-              {task.id_collaborateur.username}
+              {task.id_collaborateur?.username}
             </div>
           </div>
           {task.adresse_tache && (
@@ -244,6 +260,27 @@ export default function TaskCalendarPage() {
                     </div>
                   )}
                 </ScrollArea>
+                <div className="flex justify-center items-center mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span>{`Page ${currentPage}/ ${totalPages}`}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

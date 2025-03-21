@@ -15,6 +15,7 @@ import {
   type Task
 } from '@/lib/services/tasks';
 import { getUsersByRole } from '@/lib/services/users';
+import { getUserFromLocalStorage } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -26,6 +27,10 @@ import { toast } from 'sonner';
 export default function NewTaskPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = getUserFromLocalStorage() ?? {};
+  const userRole = user?.role ?? '';
+  console.log("user?._id", user);
+
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clientContacts'],
@@ -145,18 +150,30 @@ export default function NewTaskPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Collaborator</label>
-                <Select onValueChange={(value) => setValue('id_collaborateur', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select collaborator" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {collaborators.map((collab, index) => (
-                      <SelectItem key={index} value={collab._id}>
-                        {collab.username}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+                {userRole === 'collaborateur' ? (
+                  <>
+                    <p className="text-sm">{user?.username} (me)</p>
+                    <Input type='hidden' {...register('id_collaborateur')} defaultValue={user?.id} />
+                  </>
+                ) : (
+                  <>
+                    <Select onValueChange={(value) => setValue('id_collaborateur', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select collaborator" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {collaborators.map((collab, index) => (
+                          <SelectItem key={index} value={collab._id}>
+                            {collab.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+
+                )}
+
                 {errors.id_collaborateur && <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>}
               </div>
             </div>

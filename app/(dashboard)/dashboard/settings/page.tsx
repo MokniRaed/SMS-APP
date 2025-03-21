@@ -10,6 +10,7 @@ import { getFonctions } from '@/lib/services/clients';
 import { getAllStatusArtCmd, getAllStatusCmd } from '@/lib/services/orders';
 import { createParameter, deleteParameter, updateParameter } from '@/lib/services/parameters';
 import { getProjectsProductCible, getProjectsStatus, getProjectsTypes } from '@/lib/services/projects';
+import { getAllTaskStatus, getAllTaskTypes } from "@/lib/services/tasks";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
@@ -17,7 +18,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import {getAllTaskStatus, getAllTaskTypes} from "@/lib/services/tasks";
 
 // Types
 type ParameterCategory = 'projects' | 'tasks' | 'clients' | 'orders';
@@ -69,7 +69,7 @@ const CATEGORY_CONFIG = {
         },
         fieldMappings: {
             type: 'nom_type_tch',
-            status: 'nom_statut_tch',
+            status: 'description_statut_tch',
         }
     },
     clients: {

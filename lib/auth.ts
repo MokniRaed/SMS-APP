@@ -19,8 +19,8 @@ export interface AuthResponse {
 export async function verifyToken(token: string) {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    console.log("JWT_SECRET", JWT_SECRET);
-    console.log("payload", payload);
+    // console.log("JWT_SECRET", JWT_SECRET);
+    // console.log("payload", payload);
 
     return payload;
   } catch (error) {
@@ -32,13 +32,13 @@ export async function getUser(req?: NextRequest) {
   // console.log('getUser Cookies:', req.cookies.getAll());
 
   const token = req?.cookies.get('token')?.value;
-  console.log("token ", token);
+  // console.log("token ", token);
 
 
   if (!token) return null;
 
   const payload = await verifyToken(token);
-  console.log("payload", payload);
+  // console.log("payload", payload);
 
 
   return payload;

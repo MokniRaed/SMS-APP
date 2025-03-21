@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
   const user = await getUser(request);
 
   const { pathname } = request.nextUrl;
-  console.log("user in mdlware", user);
+  // console.log("user in mdlware", user);
 
 
   if (!user && !publicPaths.includes(pathname)) {

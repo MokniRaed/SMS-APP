@@ -192,27 +192,46 @@ export async function cancelTask(
 
 // Base CRUD operations
 interface GetTasksParams {
+  adminId?: string;
   collaboratorId?: string;
   start?: string;
   end?: string;
+  page?: number;
+  limit?: number;
 }
 
-export async function getTasks(params: GetTasksParams): Promise<Task[]> {
+interface GetTasksResponse {
+  data: Task[];
+  limit: number;
+  page: number;
+  searchTerm: string;
+  total: number
+}
+
+export async function getTasks(params: GetTasksParams) {
   try {
-    console.log("month params", params.start);
-    console.log("month params", params.end);
+    console.log("params.collaboratorId", params);
+
+    const page = params.page || 1;
+    const limit = params.limit || 10;
 
     const response = await api.get('/tasks', {
       params: {
         id_collaborateur: params.collaboratorId,
         start: params.start,
-        end: params.end
+        end: params.end,
+        page: page,
+        limit: limit
       },
     });
-    return response.data;
+    console.log("response", response);
+
+    return response;
   } catch (error) {
     console.warn('Falling back to mock data for tasks');
-    return mockTasks; // Return mock data while API is not ready
+    return {
+      data: [], limit: 5, page: 1, searchTerm: "", total: 0
+    }; // Return mock data while API is not ready
   }
 }
 

@@ -41,6 +41,7 @@ import { toast } from 'sonner';
 type ViewMode = 'grid' | 'table';
 type SortField = 'title_tache' | 'type_tache' | 'date_tache' | 'statut_tache';
 type SortOrder = 'asc' | 'desc';
+const ITEMS_PER_PAGE = 5;
 
 export default function TasksPage() {
   const router = useRouter();
@@ -50,13 +51,21 @@ export default function TasksPage() {
   const [sortField, setSortField] = useState<SortField>('date_tache');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+
   const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? '';
+  const roleId = userRole === 'collaborateur' ? { collaboratorId: user.id } : { adminId: user.id }
 
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['tasks', userRole, user?.id],
-    queryFn: () => getTasks(userRole === 'collaborateur' ? user.id : undefined)
+  const { data: tasksData = [], isLoading } = useQuery({
+    queryKey: ['tasks', userRole, user?.id, currentPage],
+    queryFn: () => getTasks({
+      ...roleId, page: currentPage,
+      limit: ITEMS_PER_PAGE,
+    }),
   });
+
+
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Task> }) => {
@@ -85,15 +94,17 @@ export default function TasksPage() {
   });
 
   const getTaskTypeName = (typeId: string) => {
-    console.log("typeId", typeId)
-    return taskTypes.find(t => t.id === typeId)?.nom_type_tch || 'Unknown';
+    return taskTypes.find(t => t.id === typeId)?.name || 'Unknown';
   };
+  const tasks = tasksData?.data || [];
+  const totalTasks = tasksData?.total || 0;
+  const totalPages = Math.ceil(totalTasks / ITEMS_PER_PAGE);
 
-  const sortedTasks = [...tasks].sort((a, b) => {
+  const sortedTasks = tasks ? [...tasks].sort((a, b) => {
     let comparison = 0;
     switch (sortField) {
       case 'title_tache':
-        comparison = a.title_tache.localeCompare(b.title_tache);
+        comparison = a?.title_tache?.localeCompare(b?.title_tache);
         break;
       case 'type_tache': {
         const typeA = (a.type_tache?.id || '').toString();
@@ -109,7 +120,7 @@ export default function TasksPage() {
         break;
     }
     return sortOrder === 'asc' ? comparison : -comparison;
-  });
+  }) : [];
 
   console.log("sortedTasks", sortedTasks)
 
@@ -297,8 +308,8 @@ export default function TasksPage() {
                 <TableRow key={index}>
                   <TableCell>
                     <Checkbox
-                      checked={selectedTasks.includes(task._id)}
-                      onCheckedChange={(checked) => handleSelectTask(task._id, checked as boolean)}
+                      checked={selectedTasks.includes(task?._id ?? '')}
+                      onCheckedChange={(checked) => handleSelectTask(task?._id ?? '', checked as boolean)}
                     />
                   </TableCell>
                   <TableCell className="font-medium">{task.title_tache}</TableCell>
@@ -433,6 +444,21 @@ export default function TasksPage() {
           ))}
         </div>
       ) : renderTableView()}
+      <div className="flex justify-between items-center">
+        <Button
+          onClick={() => setCurrentPage(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+        <span>{`Page ${currentPage} of ${totalPages}`}</span>
+        <Button
+          onClick={() => setCurrentPage(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </Button>
+      </div>
 
       <AlertDialog open={!!deleteTaskId} onOpenChange={() => setDeleteTaskId(null)}>
         <AlertDialogContent>

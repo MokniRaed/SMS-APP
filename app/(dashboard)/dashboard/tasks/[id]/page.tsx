@@ -26,11 +26,11 @@ import { toast } from 'sonner';
 
 const TASK_PHASES = [
   { status: 'SAISIE', label: 'Saisie' },
-  { status: 'AFFECTEE', label: 'Afféctée' },
-  { status: 'ACCEPTEE', label: 'Accéptée' },
-  { status: 'PLANIFIEE', label: 'Planifiée' },
-  { status: 'REPORTEE', label: 'Reportée' },
-  { status: 'CLOTUREE', label: 'Clôturée' }
+  { status: 'AFFECETD', label: 'Afféctée' },
+  { status: 'ACCEPTED', label: 'Accéptée' },
+  { status: 'PLANIFIED', label: 'Planifiée' },
+  { status: 'REPORTED', label: 'Reportée' },
+  { status: 'CLOSED', label: 'Clôturée' }
 ];
 
 export default function TaskDetailsPage({ params }: { params: { id: string } }) {
@@ -52,6 +52,9 @@ export default function TaskDetailsPage({ params }: { params: { id: string } }) 
     queryKey: ['task', params.id],
     queryFn: () => getTask(params.id)
   });
+
+  console.log("task", task);
+
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clientContacts'],
@@ -129,15 +132,15 @@ export default function TaskDetailsPage({ params }: { params: { id: string } }) 
   };
 
   const renderStepper = () => {
-    const currentPhaseIndex = TASK_PHASES.findIndex(phase => phase.status === task.statut_tache);
-    const isTaskCancelled = task.statut_tache === 'ANNULEE';
+    const currentPhaseIndex = TASK_PHASES.findIndex(phase => phase.status === task?.statut_tache?.nom_statut_tch);
+    const isTaskCancelled = task.statut_tache?.nom_statut_tch === 'ANNULEE';
 
     return (
       <div className="w-full py-4">
         <div className="flex justify-between">
           {TASK_PHASES.map((phase, index) => {
             const isActive = !isTaskCancelled && index <= currentPhaseIndex;
-            const isCurrent = phase.status === task.statut_tache;
+            const isCurrent = phase.status === task?.statut_tache?.nom_statut_tch;
 
             return (
               <div key={phase.status} className="flex flex-col items-center flex-1">
@@ -202,7 +205,7 @@ export default function TaskDetailsPage({ params }: { params: { id: string } }) 
           <CardContent className="space-y-4">
             <div>
               <h3 className="text-xl font-semibold">{task.title_tache}</h3>
-              <span className={`mt-2 inline-block px-2 py-1 rounded-full text-xs ${getStatusColor(task.statut_tache)}`}>
+              <span className={`mt-2 inline-block px-2 py-1 rounded-full text-xs ${getStatusColor(task?.statut_tache?.nom_statut_tch)}`}>
                 {task.statut_tache.nom_statut_tch}
               </span>
             </div>
@@ -235,25 +238,25 @@ export default function TaskDetailsPage({ params }: { params: { id: string } }) 
             )}
 
             <div className="flex justify-end space-x-2">
-              {task.statut_tache === 'AFFECTEE' && (
+              {task.statut_tache?.nom_statut_tch === 'AFFECTEE' && (
                 <Button onClick={() => updateMutation.mutate({ action: 'accept' })}>
                   Accept Task
                 </Button>
               )}
 
-              {task.statut_tache === 'ACCEPTEE' && (
+              {task.statut_tache?.nom_statut_tch === 'ACCEPTEE' && (
                 <Button onClick={() => setShowPlanDialog(true)}>
                   Plan Task
                 </Button>
               )}
 
-              {task.statut_tache === 'PLANIFIEE' && (
+              {task.statut_tache?.nom_statut_tch === 'PLANIFIEE' && (
                 <Button onClick={() => setShowReportDialog(true)}>
                   Submit Report
                 </Button>
               )}
 
-              {task.statut_tache === 'REPORTEE' && (
+              {task.statut_tache?.nom_statut_tch === 'REPORTEE' && (
                 <>
                   <Button
                     variant="outline"
