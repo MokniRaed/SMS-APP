@@ -33,12 +33,12 @@ export const taskTypes = [
 // Updated task statuses to match French workflow
 export const taskStatuses = [
   { id: 'SAISIE', name: 'Saisie' },
-  { id: 'AFFECTEE', name: 'Afféctée' },
-  { id: 'ACCEPTEE', name: 'Accéptée' },
-  { id: 'PLANIFIEE', name: 'Planifiée' },
-  { id: 'REPORTEE', name: 'Reportée' },
-  { id: 'CLOTUREE', name: 'Clôturée' },
-  { id: 'ANNULEE', name: 'Annulée' }
+  { id: 'AFFECETD', name: 'Afféctée' },
+  { id: 'ACCEPTED', name: 'Accéptée' },
+  { id: 'PLANIFIED', name: 'Planifiée' },
+  { id: 'REPORTED', name: 'Reportée' },
+  { id: 'CLOSED', name: 'Clôturée' },
+  { id: 'CANCELED', name: 'Annulée' }
 ];
 
 export const collaborators = [
