@@ -83,6 +83,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
 
     // console.log("date_livraison", date_livraison);
 
+
     const statusMapArtCmd = statusArtCmd.reduce((acc, status) => ({
         ...acc,
         [status._id]: status.description,
@@ -199,7 +200,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                     quantite_valid: 0,
                     quantite_confr: 0,
                     notes_cmd: '',
-                    // statut_art_cmd: '67b1670ed3246eb50d70e09c'
+                    statut_art_cmd: '67b1670ed3246eb50d70e09c'
                 });
             }
         });
@@ -659,7 +660,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
 
                                             <TableHead>Notes</TableHead>
                                             <TableHead>Status</TableHead>
-                                            {canEdit() && <TableHead>Actions</TableHead>}
+                                            {<TableHead>Actions</TableHead>}
 
                                         </TableRow>
                                     </TableHeader>
@@ -768,7 +769,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                                             {status || 'Unknown Status'}
                                                         </Badge>
                                                     </TableCell>
-                                                    {canEdit() && (
+                                                    {(
                                                         <TableCell>
                                                             <Button
                                                                 type="button"

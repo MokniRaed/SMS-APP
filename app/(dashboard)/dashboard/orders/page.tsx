@@ -328,7 +328,7 @@ export default function OrdersPage() {
                     {order.date_livraison ? format(new Date(order.date_livraison), 'PP') : '-'}
                   </TableCell>
                   {/* <TableCell>{order.articles.length} items</TableCell> */}
-                  <TableCell>{order?.id_collaborateur?.username} items</TableCell>
+                  <TableCell>-{order?.id_collaborateur?.username} </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(order.statut_cmd?.description)}>
                       {order?.statut_cmd?.description}

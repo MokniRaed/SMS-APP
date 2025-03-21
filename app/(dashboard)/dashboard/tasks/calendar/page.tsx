@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getTasks, Task, taskStatuses } from '@/lib/services/tasks';
 import { useQuery } from '@tanstack/react-query';
-import { eachDayOfInterval, endOfMonth, format, isSameDay, isWithinInterval, startOfMonth } from 'date-fns';
+import { eachDayOfInterval, endOfMonth, format, isSameDay, startOfMonth } from 'date-fns';
 import { CalendarDays, ChevronLeft, ChevronRight, MapPin, Plus, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -33,10 +33,11 @@ export default function TaskCalendarPage() {
   const getTasksForMonth = (date: Date) => {
     const start = startOfMonth(date);
     const end = endOfMonth(date);
-    return tasks.filter(task => {
-      const taskDate = new Date(task.date_tache);
-      return isWithinInterval(taskDate, { start, end });
+    const { data: tasks = [] } = useQuery({
+      queryKey: ['tasks', date],
+      queryFn: () => getTasks({ start: start.toISOString(), end: end.toISOString() }),
     });
+    return tasks;
   };
 
   const getStatusColor = (statusId: string) => {

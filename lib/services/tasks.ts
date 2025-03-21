@@ -191,11 +191,22 @@ export async function cancelTask(
 }
 
 // Base CRUD operations
-export async function getTasks(collaboratorId?: string): Promise<Task[]> {
+interface GetTasksParams {
+  collaboratorId?: string;
+  start?: string;
+  end?: string;
+}
+
+export async function getTasks(params: GetTasksParams): Promise<Task[]> {
   try {
+    console.log("month params", params.start);
+    console.log("month params", params.end);
+
     const response = await api.get('/tasks', {
       params: {
-        id_collaborateur: collaboratorId,
+        id_collaborateur: params.collaboratorId,
+        start: params.start,
+        end: params.end
       },
     });
     return response.data;

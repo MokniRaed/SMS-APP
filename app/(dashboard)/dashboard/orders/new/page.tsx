@@ -510,7 +510,7 @@ export default function NewOrderPage() {
                         <TableCell colSpan={9} className="py-12">
                           <div className="flex flex-col items-center justify-center gap-4 p-4">
                             <p className="text-gray-500 dark:text-gray-400">No articles added to order</p>
-                            {userRole == "admin" && <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            {<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                               <DialogTrigger asChild>
                                 <Button variant="default" className="gap-2">
                                   <Plus className="h-4 w-4" />
