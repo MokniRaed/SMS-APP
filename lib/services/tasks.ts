@@ -7,7 +7,8 @@ export const TaskSchema = z.object({
   type_tache: z.string().min(1, 'Task type is required'),
   id_client: z.string().min(1, 'Client is required'),
   id_projet: z.string().min(1, 'Project is required'),
-  id_collaborateur: z.string().min(1, 'Collaborator is required'),
+  id_collaborateur: z.string().optional(),
+  // id_collaborateur: z.string().min(1, 'Collaborator is required'),
   date_tache: z.string().min(1, 'Task date is required'),
   description_tache: z.string().optional(),
   adresse_tache: z.string().optional(),
@@ -297,5 +298,17 @@ export async function getAllTaskStatus(): Promise<any[]> {
   } catch (error) {
     console.warn('Falling back to mock data for article command status');
 
+  }
+}
+
+
+export async function getTaskStatusByName(name: string): Promise<any | undefined> {
+  try {
+    const response = await api.get(`/tasks/taskStatusByName?name=${name}`);
+    return response.data;
+  } catch (error) {
+    console.warn(`Falling back to mock data for task status with name: ${name}`);
+
+    return null
   }
 }

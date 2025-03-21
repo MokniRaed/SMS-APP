@@ -323,7 +323,7 @@ export default function TasksPage() {
                     }
                   </TableCell>
                   <TableCell>{task?.id_client.id_client}-{task?.id_client.nom_prenom_contact}</TableCell>
-                  <TableCell>{task?.id_collaborateur.username}</TableCell>
+               <TableCell>{  task?.id_collaborateur?.username ?  task?.id_collaborateur?.username :"-"}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(task.statut_tache)}`}>
                       {task.statut_tache.nom_statut_tch}

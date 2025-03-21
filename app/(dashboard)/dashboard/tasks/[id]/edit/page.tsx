@@ -1,82 +1,117 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { getClientContacts } from '@/lib/services/clients';
-import { getProjects } from '@/lib/services/projects';
-import { getAllTaskStatus, getAllTaskTypes, getTask, TaskSchema, updateTask, type Task } from '@/lib/services/tasks';
-import { getUsersByRole } from '@/lib/services/users';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { getClientContacts } from "@/lib/services/clients";
+import { getProjects } from "@/lib/services/projects";
+import {
+  getAllTaskTypes,
+  getTask,
+  getTaskStatusByName,
+  TaskSchema,
+  updateTask,
+  type Task,
+} from "@/lib/services/tasks";
+import { getUsersByRole } from "@/lib/services/users";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 export default function EditTaskPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: task, isLoading: isLoadingTask } = useQuery({
-    queryKey: ['task', params.id],
-    queryFn: () => getTask(params.id)
+    queryKey: ["task", params.id],
+    queryFn: () => getTask(params.id),
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ['clientContacts'],
-    queryFn: getClientContacts
+    queryKey: ["clientContacts"],
+    queryFn: getClientContacts,
   });
 
-
   const { data: collaborators = [] } = useQuery({
-    queryKey: ['collaborators'],
-    queryFn: () => getUsersByRole("679694ee22268f25bdfcba23")
+    queryKey: ["collaborators"],
+    queryFn: () => getUsersByRole("679694ee22268f25bdfcba23"),
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: getProjects
+    queryKey: ["projects"],
+    queryFn: getProjects,
   });
 
   const { data: taskTypes = [] } = useQuery({
-    queryKey: ['taskTypes'],
-    queryFn: getAllTaskTypes
+    queryKey: ["taskTypes"],
+    queryFn: getAllTaskTypes,
   });
 
-  const { data: taskStatus = [] } = useQuery({
-    queryKey: ['taskStatus'],
-    queryFn: getAllTaskStatus
-  });
+    // const { data: taskStatus = [] } = useQuery({
+  //   queryKey: ['taskStatus'],
+  //   queryFn: getAllTaskStatus
+  // });
 
-
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<Task>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<Task>({
     resolver: zodResolver(TaskSchema),
     values: {
       ...task,
       type_tache: task?.type_tache._id,
       id_client: task?.id_client._id,
       id_projet: task?.id_projet._id,
-      id_collaborateur: task?.id_collaborateur._id,
+      id_collaborateur: task?.id_collaborateur?._id,
       statut_tache: task?.statut_tache._id,
-      date_tache: task?.date_tache ? task.date_tache.split('T')[0] : "", // Ensure format YYYY-MM-DD
-      date_execution_tache: task?.date_execution_tache ? task.date_execution_tache.split('T')[0] : "" // Ensure format YYYY-MM-DD
+      date_tache: task?.date_tache ? task.date_tache.split("T")[0] : "", // Ensure format YYYY-MM-DD
+      date_execution_tache: task?.date_execution_tache
+        ? task.date_execution_tache.split("T")[0]
+        : "", // Ensure format YYYY-MM-DD
     },
   });
 
+  const selectedCollaborator = watch("id_collaborateur");
+
+  const { data: taskStatus } = useQuery({
+    queryKey: ["taskStatus", selectedCollaborator],
+    queryFn: ({ queryKey }) => {
+      const [, selectedCollaborator] = queryKey;
+      const statusName = selectedCollaborator ? "AFFECETD" : "SAISIE";
+      return getTaskStatusByName(statusName);
+    },
+  });
+  console.log("taskStatus",taskStatus);
+  
 
   const onSubmit = async (data: Task) => {
     setIsSubmitting(true);
     try {
-      const response = await updateTask(params.id, data)
+      const response = await updateTask(params.id, {
+        ...data,
+        statut_tache: taskStatus?._id,
+      });
 
-      if (response) throw new Error(`Failed to update Task : ${response?.message}`);
+      if (response)
+        throw new Error(`Failed to update Task : ${response?.message}`);
 
-      toast.success('Task updated successfully');
-      router.push('/dashboard/tasks');
+      toast.success("Task updated successfully");
+      router.push("/dashboard/tasks");
     } catch (error) {
       console.log("err", error);
       toast.error(` Failed to update Task :${error?.message}`);
@@ -104,8 +139,12 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Title</label>
-              <Input {...register('title_tache')} disabled={isSubmitting} />
-              {errors.title_tache && <p className="text-sm text-red-500">{errors.title_tache.message}</p>}
+              <Input {...register("title_tache")} disabled={isSubmitting} />
+              {errors.title_tache && (
+                <p className="text-sm text-red-500">
+                  {errors.title_tache.message}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -113,7 +152,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                 <label className="text-sm font-medium">Task Type</label>
                 <Select
                   defaultValue={task.type_tache._id}
-                  onValueChange={(value) => setValue('type_tache', value)}
+                  onValueChange={(value) => setValue("type_tache", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select task type" />
@@ -126,14 +165,18 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.type_tache && <p className="text-sm text-red-500">{errors.type_tache.message}</p>}
+                {errors.type_tache && (
+                  <p className="text-sm text-red-500">
+                    {errors.type_tache.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Client</label>
                 <Select
                   defaultValue={task.id_client._id}
-                  onValueChange={(value) => setValue('id_client', value)}
+                  onValueChange={(value) => setValue("id_client", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select client" />
@@ -146,7 +189,11 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.id_client && <p className="text-sm text-red-500">{errors.id_client.message}</p>}
+                {errors.id_client && (
+                  <p className="text-sm text-red-500">
+                    {errors.id_client.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -155,7 +202,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                 <label className="text-sm font-medium">Project</label>
                 <Select
                   defaultValue={task.id_projet._id}
-                  onValueChange={(value) => setValue('id_projet', value)}
+                  onValueChange={(value) => setValue("id_projet", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select project" />
@@ -168,14 +215,18 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.id_projet && <p className="text-sm text-red-500">{errors.id_projet.message}</p>}
+                {errors.id_projet && (
+                  <p className="text-sm text-red-500">
+                    {errors.id_projet.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Collaborator</label>
                 <Select
-                  defaultValue={task.id_collaborateur._id}
-                  onValueChange={(value) => setValue('id_collaborateur', value)}
+                  defaultValue={task.id_collaborateur?._id}
+                  onValueChange={(value) => setValue("id_collaborateur", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select collaborator" />
@@ -188,70 +239,106 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.id_collaborateur && <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>}
+                {errors.id_collaborateur && (
+                  <p className="text-sm text-red-500">
+                    {errors.id_collaborateur.message}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Task Date</label>
-                <Input type="date" {...register('date_tache')} disabled={isSubmitting} />
-                {errors.date_tache && <p className="text-sm text-red-500">{errors.date_tache.message}</p>}
+                <Input
+                  type="date"
+                  {...register("date_tache")}
+                  disabled={isSubmitting}
+                />
+                {errors.date_tache && (
+                  <p className="text-sm text-red-500">
+                    {errors.date_tache.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Execution Date</label>
-                <Input type="date" {...register('date_execution_tache')} disabled={isSubmitting} />
-                {errors.date_execution_tache && <p className="text-sm text-red-500">{errors.date_execution_tache.message}</p>}
+                <Input
+                  type="date"
+                  {...register("date_execution_tache")}
+                  disabled={isSubmitting}
+                />
+                {errors.date_execution_tache && (
+                  <p className="text-sm text-red-500">
+                    {errors.date_execution_tache.message}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Description</label>
-              <Textarea {...register('description_tache')} disabled={isSubmitting} />
-              {errors.description_tache && <p className="text-sm text-red-500">{errors.description_tache.message}</p>}
+              <Textarea
+                {...register("description_tache")}
+                disabled={isSubmitting}
+              />
+              {errors.description_tache && (
+                <p className="text-sm text-red-500">
+                  {errors.description_tache.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Address</label>
-              <Input {...register('adresse_tache')} disabled={isSubmitting} />
-              {errors.adresse_tache && <p className="text-sm text-red-500">{errors.adresse_tache.message}</p>}
+              <Input {...register("adresse_tache")} disabled={isSubmitting} />
+              {errors.adresse_tache && (
+                <p className="text-sm text-red-500">
+                  {errors.adresse_tache.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Report</label>
-              <Textarea {...register('compte_rendu_tache')} disabled={isSubmitting} />
-              {errors.compte_rendu_tache && <p className="text-sm text-red-500">{errors.compte_rendu_tache.message}</p>}
+              <Textarea
+                {...register("compte_rendu_tache")}
+                disabled={isSubmitting}
+              />
+              {errors.compte_rendu_tache && (
+                <p className="text-sm text-red-500">
+                  {errors.compte_rendu_tache.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
-              <Select
-                defaultValue={task.statut_tache._id}
-                onValueChange={(value) => setValue('statut_tache', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {taskStatus.map((status) => (
-                    <SelectItem key={status._id} value={status._id}>
-                      {status.nom_statut_tch}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.statut_tache && <p className="text-sm text-red-500">{errors.statut_tache.message}</p>}
+              <p className="text-sm">{taskStatus?.nom_statut_tch}</p>
+              {errors.statut_tache && (
+                <p className="text-sm text-red-500">
+                  {errors.statut_tache.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Notes</label>
-              <Textarea {...register('notes_tache')} disabled={isSubmitting} />
-              {errors.notes_tache && <p className="text-sm text-red-500">{errors.notes_tache.message}</p>}
+              <Textarea {...register("notes_tache")} disabled={isSubmitting} />
+              {errors.notes_tache && (
+                <p className="text-sm text-red-500">
+                  {errors.notes_tache.message}
+                </p>
+              )}
             </div>
 
             <div className="flex justify-end space-x-4">
-              <Button variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+              <Button
+                variant="outline"
+                onClick={() => router.back()}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
@@ -261,7 +348,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                     Updating...
                   </>
                 ) : (
-                  'Update Task'
+                  "Update Task"
                 )}
               </Button>
             </div>

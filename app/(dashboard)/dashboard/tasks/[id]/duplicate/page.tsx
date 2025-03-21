@@ -60,7 +60,7 @@ export default function DuplicateTaskPage({ params }: { params: { id: string } }
       type_tache: task?.type_tache._id,
       id_client: task?.id_client._id,
       id_projet: task?.id_projet._id,
-      id_collaborateur: task?.id_collaborateur._id,
+      id_collaborateur: task?.id_collaborateur?._id,
       statut_tache: task?.statut_tache._id,
       date_tache: task?.date_tache ? task.date_tache.split('T')[0] : "", // Ensure format YYYY-MM-DD
       date_execution_tache: task?.date_execution_tache ? task.date_execution_tache.split('T')[0] : "" // Ensure format YYYY-MM-DD
@@ -174,7 +174,7 @@ export default function DuplicateTaskPage({ params }: { params: { id: string } }
               <div className="space-y-2">
                 <label className="text-sm font-medium">Collaborator</label>
                 <Select
-                  defaultValue={task.id_collaborateur._id}
+                  defaultValue={task.id_collaborateur?._id}
                   onValueChange={(value) => setValue('id_collaborateur', value)}
                 >
                   <SelectTrigger>
