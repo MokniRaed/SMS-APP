@@ -375,7 +375,7 @@ export default function TasksPage() {
               key={task.id}
               className="relative overflow-hidden"
             >
-              <CardContent className="p-6">
+              <CardContent className="p-6 pb-16">
                 <div className="absolute top-4 left-4">
                   <Checkbox
                     checked={selectedTasks.includes(task._id)}
@@ -410,21 +410,21 @@ export default function TasksPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
+                      onClick={() => router.push(`/dashboard/tasks/${task._id}`)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push(`/dashboard/tasks/${task.id}/edit`)}
+                      onClick={() => router.push(`/dashboard/tasks/${task._id}/edit`)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push(`/dashboard/tasks/${task.id}/duplicate`)}
+                      onClick={() => router.push(`/dashboard/tasks/${task._id}/duplicate`)}
                     >
                       <BookCopy className="h-4 w-4" />
                     </Button>
