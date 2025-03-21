@@ -87,20 +87,33 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   });
 
   const selectedCollaborator = watch("id_collaborateur");
+  const dateExecutionTache = watch("date_execution_tache");
 
   const { data: taskStatus } = useQuery({
-    queryKey: ["taskStatus", selectedCollaborator],
+    queryKey: ["taskStatus", selectedCollaborator, dateExecutionTache],
     queryFn: ({ queryKey }) => {
-      const [, selectedCollaborator] = queryKey;
-      const statusName = selectedCollaborator ? "AFFECETD" : "SAISIE";
+      const [, selectedCollaborator, dateExecutionTache] = queryKey;
+      let statusName = "SAISIE";
+      if (dateExecutionTache && selectedCollaborator) {
+        statusName = "PLANIFIED";
+      } else if (selectedCollaborator) {
+        statusName = "AFFECETD";
+      }
       return getTaskStatusByName(statusName);
     },
   });
-  console.log("taskStatus",taskStatus);
+  console.log("taskStatus", taskStatus);
   
 
   const onSubmit = async (data: Task) => {
     setIsSubmitting(true);
+
+    if (data.date_execution_tache && !data.id_collaborateur) {
+      toast.error("Please select a collaborator before setting an execution date.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const response = await updateTask(params.id, {
         ...data,
