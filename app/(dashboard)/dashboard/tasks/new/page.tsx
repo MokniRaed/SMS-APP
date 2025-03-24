@@ -15,14 +15,13 @@ import { getClientContacts } from "@/lib/services/clients";
 import { getProjects } from "@/lib/services/projects";
 import {
   createTask,
-  getAllTaskStatus,
   getAllTaskTypes,
   getTaskStatusByName,
   TaskSchema,
-  type Task,
+  type Task
 } from "@/lib/services/tasks";
 import { getUsersByRole } from "@/lib/services/users";
-import { getUserFromLocalStorage } from "@/lib/utils";
+import { getUserFromLocalStorage, statusColors } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
@@ -36,6 +35,8 @@ export default function NewTaskPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? "";
+
+
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clientContacts"],
@@ -51,10 +52,7 @@ export default function NewTaskPage() {
     queryFn: getAllTaskTypes,
   });
 
-  const { data: taskStatus } = useQuery({
-    queryKey: ["taskStatus"],
-    queryFn: () => getTaskStatusByName("SAISIE"),
-  });
+
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
@@ -66,15 +64,36 @@ export default function NewTaskPage() {
     handleSubmit,
     formState: { errors },
     setValue,
+    watch
   } = useForm<Task>({
     resolver: zodResolver(TaskSchema),
     defaultValues: {
       date_tache: new Date().toISOString().split("T")[0],
-      statut_tache: taskStatus?._id ,
+      // statut_tache: taskStatus?._id ,
     },
   });
 
+  const selectedCollaborator = watch("id_collaborateur");
+  const statut_tache = watch("statut_tache");
+  console.log("statut_tache", statut_tache);
+
+  const { data: taskStatus } = useQuery({
+    queryKey: ["taskStatus", selectedCollaborator],
+    queryFn: ({ queryKey }) => {
+      const [, selectedCollaborator] = queryKey;
+      let statusName = "SAISIE";
+      if (selectedCollaborator) {
+        statusName = "AFFECTED";
+      }
+      return getTaskStatusByName(statusName);
+    },
+  });
+
+
+
   const onSubmit = async (data: Task) => {
+    setValue("statut_tache", taskStatus?._id)
+
     setIsSubmitting(true);
     try {
       const response = await createTask(data);
@@ -238,9 +257,12 @@ export default function NewTaskPage() {
                 <label className="text-sm font-medium">Execution Date</label>
                 <Input
                   type="date"
-                  {...register("date_execution_tache")}
-                  disabled={isSubmitting}
+                  // {...register("date_execution_tache")}
+                  disabled={true}
                 />
+                <p className="text-sm text-gray-500">
+                  Only when colaborator accept the task
+                </p>
                 {errors.date_execution_tache && (
                   <p className="text-sm text-red-500">
                     {errors.date_execution_tache.message}
@@ -272,11 +294,18 @@ export default function NewTaskPage() {
               )}
             </div>
 
-           <div className="space-y-2">
+            <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               {taskStatus ? (
                 <>
-                  <p className="text-sm">{taskStatus?.description_statut_tch}</p>
+                  <p className="text-sm">
+
+                    {taskStatus?.nom_statut_tch && <span
+                      className={`inline-block h-2 w-2 rounded-full mr-1 ${statusColors[taskStatus?.nom_statut_tch] || 'bg-gray-400'
+                        }`}
+                    ></span>}
+
+                    {taskStatus?.description_statut_tch}</p>
                   <Input
                     type="hidden"
                     {...register("statut_tache")}

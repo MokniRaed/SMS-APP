@@ -1,9 +1,9 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Calendar, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function TasksLayout({
   children,
@@ -15,10 +15,10 @@ export default function TasksLayout({
   return (
     <div className="space-y-6">
       <div className="border-b">
-        <div className="flex h-16 items-center px-4">
+        <div className="flex  items-center px-4">
           <div className="ml-auto flex items-center space-x-4">
             <Link href="/dashboard/tasks">
-              <Button 
+              <Button
                 variant={pathname === '/dashboard/tasks' ? 'secondary' : 'ghost'}
                 size="sm"
               >
@@ -27,7 +27,7 @@ export default function TasksLayout({
               </Button>
             </Link>
             <Link href="/dashboard/tasks/calendar">
-              <Button 
+              <Button
                 variant={pathname === '/dashboard/tasks/calendar' ? 'secondary' : 'ghost'}
                 size="sm"
               >
@@ -36,6 +36,7 @@ export default function TasksLayout({
               </Button>
             </Link>
           </div>
+
         </div>
       </div>
       {children}

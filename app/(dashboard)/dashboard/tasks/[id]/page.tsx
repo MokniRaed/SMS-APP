@@ -16,7 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { getClientContacts } from '@/lib/services/clients';
 import { getProjects } from '@/lib/services/projects';
-import { acceptTask, cancelTask, completeTask, getTask, planTask, reportTask, taskStatuses, taskTypes } from '@/lib/services/tasks';
+import { acceptTask, cancelTask, completeTask, getStatusColor, getTask, planTask, reportTask, taskStatuses, taskTypes } from '@/lib/services/tasks';
+import { statusColors } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Briefcase, CalendarDays, Check, FileText, MapPin, Pencil, User } from 'lucide-react';
@@ -26,7 +27,7 @@ import { toast } from 'sonner';
 
 const TASK_PHASES = [
   { status: 'SAISIE', label: 'Saisie' },
-  { status: 'AFFECETD', label: 'Afféctée' },
+  { status: 'AFFECTED', label: 'Afféctée' },
   { status: 'ACCEPTED', label: 'Accéptée' },
   { status: 'PLANIFIED', label: 'Planifiée' },
   { status: 'REPORTED', label: 'Reportée' },
@@ -52,9 +53,6 @@ export default function TaskDetailsPage({ params }: { params: { id: string } }) 
     queryKey: ['task', params.id],
     queryFn: () => getTask(params.id)
   });
-
-  console.log("task", task);
-
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clientContacts'],
@@ -110,18 +108,18 @@ export default function TaskDetailsPage({ params }: { params: { id: string } }) 
     return taskStatuses.find(s => s.id === statusId)?.name || 'Unknown';
   };
 
-  const getStatusColor = (statusId: string) => {
-    const colors = {
-      'SAISIE': 'bg-gray-100 text-gray-800',
-      'AFFECTEE': 'bg-blue-100 text-blue-800',
-      'ACCEPTEE': 'bg-yellow-100 text-yellow-800',
-      'PLANIFIEE': 'bg-purple-100 text-purple-800',
-      'REPORTEE': 'bg-orange-100 text-orange-800',
-      'CLOTUREE': 'bg-green-100 text-green-800',
-      'ANNULEE': 'bg-red-100 text-red-800'
-    };
-    return colors[statusId as keyof typeof colors] || colors['SAISIE'];
-  };
+  // const getStatusColor = (statusId: string) => {
+  //   const colors = {
+  //     'SAISIE': 'bg-gray-100 text-gray-800',
+  //     'AFFECTEE': 'bg-blue-100 text-blue-800',
+  //     'ACCEPTEE': 'bg-yellow-100 text-yellow-800',
+  //     'PLANIFIEE': 'bg-purple-100 text-purple-800',
+  //     'REPORTEE': 'bg-orange-100 text-orange-800',
+  //     'CLOTUREE': 'bg-green-100 text-green-800',
+  //     'ANNULEE': 'bg-red-100 text-red-800'
+  //   };
+  //   return colors[statusId as keyof typeof colors] || colors['SAISIE'];
+  // };
 
   const getClientName = (clientId: string) => {
     return clients.find(c => c.id_client === clientId)?.nom_prenom_contact || 'Unknown Client';
@@ -205,8 +203,9 @@ export default function TaskDetailsPage({ params }: { params: { id: string } }) 
           <CardContent className="space-y-4">
             <div>
               <h3 className="text-xl font-semibold">{task.title_tache}</h3>
-              <span className={`mt-2 inline-block px-2 py-1 rounded-full text-xs ${getStatusColor(task?.statut_tache?.nom_statut_tch)}`}>
-                {task.statut_tache.nom_statut_tch}
+              <span className={`mt-2 inline-block px-2 py-1 rounded-full text-xs
+              ${statusColors[task?.statut_tache?.nom_statut_tch] || 'bg-gray-400'}`} >
+                {task.statut_tache?.description_statut_tch}
               </span>
             </div>
 

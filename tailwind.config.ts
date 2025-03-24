@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import defaultTheme from 'tailwindcss/defaultTheme';
 
 const config: Config = {
   darkMode: ['class'],
@@ -20,6 +21,7 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       colors: {
+        ...defaultTheme.colors,
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

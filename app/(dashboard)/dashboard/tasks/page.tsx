@@ -33,7 +33,7 @@ import { deleteTask, getTasks, Task, taskStatuses, taskTypes, updateTask } from 
 import { getUserFromLocalStorage } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { ArrowUpDown, BookCopy, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2 } from 'lucide-react';
+import { ArrowUpDown, BookCopy, ChevronLeft, ChevronRight, Eye, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -41,7 +41,7 @@ import { toast } from 'sonner';
 type ViewMode = 'grid' | 'table';
 type SortField = 'title_tache' | 'type_tache' | 'date_tache' | 'statut_tache';
 type SortOrder = 'asc' | 'desc';
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 9;
 
 export default function TasksPage() {
   const router = useRouter();
@@ -323,7 +323,7 @@ export default function TasksPage() {
                     }
                   </TableCell>
                   <TableCell>{task?.id_client.id_client}-{task?.id_client.nom_prenom_contact}</TableCell>
-               <TableCell>{  task?.id_collaborateur?.username ?  task?.id_collaborateur?.username :"-"}</TableCell>
+                  <TableCell>{task?.id_collaborateur?.username ? task?.id_collaborateur?.username : "-"}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(task.statut_tache)}`}>
                       {task.statut_tache.nom_statut_tch}
@@ -444,20 +444,22 @@ export default function TasksPage() {
           ))}
         </div>
       ) : renderTableView()}
-      <div className="flex justify-between items-center">
-        <Button
+      <div className="flex justify-center gap-4 items-center">
+        {currentPage !== 1 && <Button
           onClick={() => setCurrentPage(currentPage - 1)}
           disabled={currentPage === 1}
         >
-          Previous
-        </Button>
+          <ChevronLeft />
+          {/* Previous */}
+        </Button>}
         <span>{`Page ${currentPage} of ${totalPages}`}</span>
-        <Button
+        {currentPage !== totalPages && <Button
           onClick={() => setCurrentPage(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
-          Next
-        </Button>
+          <ChevronRight />
+          {/* Next */}
+        </Button>}
       </div>
 
       <AlertDialog open={!!deleteTaskId} onOpenChange={() => setDeleteTaskId(null)}>

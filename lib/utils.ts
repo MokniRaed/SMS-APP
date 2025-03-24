@@ -3,6 +3,17 @@ import { clsx, type ClassValue } from 'clsx';
 import { toast } from 'sonner';
 import { twMerge } from 'tailwind-merge';
 
+
+export const statusColors: Record<string, string> = {
+  SAISIE: 'bg-gray-400',
+  AFFECTED: 'bg-green-400',
+  ACCEPTED: 'bg-purple-400',
+  PLANIFIED: 'bg-blue-400',
+  REPORTED: 'bg-orange-400',
+  CLOSED: 'bg-red-400',
+  CANCELED: 'bg-gray-400',
+};
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

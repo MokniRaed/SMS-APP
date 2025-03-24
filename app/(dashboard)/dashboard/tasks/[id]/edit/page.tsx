@@ -14,14 +14,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { getClientContacts } from "@/lib/services/clients";
 import { getProjects } from "@/lib/services/projects";
 import {
+  getAllTaskStatus,
   getAllTaskTypes,
   getTask,
   getTaskStatusByName,
   TaskSchema,
   updateTask,
-  type Task,
+  type Task
 } from "@/lib/services/tasks";
 import { getUsersByRole } from "@/lib/services/users";
+import { getUserFromLocalStorage, statusColors } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -30,9 +32,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+
+
 export default function EditTaskPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = getUserFromLocalStorage() ?? {};
+  const userRole = user?.role ?? "";
 
   const { data: task, isLoading: isLoadingTask } = useQuery({
     queryKey: ["task", params.id],
@@ -59,7 +65,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
     queryFn: getAllTaskTypes,
   });
 
-    // const { data: taskStatus = [] } = useQuery({
+  // const { data: taskStatus = [] } = useQuery({
   //   queryKey: ['taskStatus'],
   //   queryFn: getAllTaskStatus
   // });
@@ -89,23 +95,31 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   const selectedCollaborator = watch("id_collaborateur");
   const dateExecutionTache = watch("date_execution_tache");
 
+  console.log("watch", watch("statut_tache"));
+
   const { data: taskStatus } = useQuery({
     queryKey: ["taskStatus", selectedCollaborator, dateExecutionTache],
     queryFn: ({ queryKey }) => {
       const [, selectedCollaborator, dateExecutionTache] = queryKey;
       let statusName = "SAISIE";
-      if (dateExecutionTache && selectedCollaborator) {
+      if (dateExecutionTache && selectedCollaborator && userRole === "admin") {
         statusName = "PLANIFIED";
       } else if (selectedCollaborator) {
-        statusName = "AFFECETD";
+        statusName = "AFFECTED";
       }
       return getTaskStatusByName(statusName);
     },
   });
-  console.log("taskStatus", taskStatus);
-  
+
+  const { data: allTaskStatus = [] } = useQuery({
+    queryKey: ['allTaskStatus'],
+    queryFn: getAllTaskStatus
+  });
+
 
   const onSubmit = async (data: Task) => {
+    console.log("data", data);
+
     setIsSubmitting(true);
 
     if (data.date_execution_tache && !data.id_collaborateur) {
@@ -117,7 +131,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
     try {
       const response = await updateTask(params.id, {
         ...data,
-        statut_tache: taskStatus?._id,
+        // statut_tache: taskStatus?._id,
       });
 
       if (response)
@@ -125,9 +139,9 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
 
       toast.success("Task updated successfully");
       router.push("/dashboard/tasks");
-    } catch (error) {
+    } catch (error: any) {
       console.log("err", error);
-      toast.error(` Failed to update Task :${error?.message}`);
+      toast.error(` Failed to update Task :${error?.message || error}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -237,21 +251,37 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Collaborator</label>
-                <Select
-                  defaultValue={task.id_collaborateur?._id}
-                  onValueChange={(value) => setValue("id_collaborateur", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select collaborator" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {collaborators.map((collab) => (
-                      <SelectItem key={collab._id} value={collab._id}>
-                        {collab.username}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+                {userRole === "collaborateur" ? (
+                  <>
+                    <p className="text-sm">{user?.username} (me)</p>
+                    <Input
+                      type="hidden"
+                      {...register("id_collaborateur")}
+                      defaultValue={user?.id}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Select
+                      onValueChange={(value) =>
+                        setValue("id_collaborateur", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select collaborator" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {collaborators.map((collab, index) => (
+                          <SelectItem key={index} value={collab._id}>
+                            {collab.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+
                 {errors.id_collaborateur && (
                   <p className="text-sm text-red-500">
                     {errors.id_collaborateur.message}
@@ -328,7 +358,43 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
-              <p className="text-sm">{taskStatus?.nom_statut_tch}</p>
+              {userRole === "collaborateur" && taskStatus?.nom_statut_tch === "PLANIFIED" ? (
+                <Select
+                  defaultValue={task.statut_tache._id}
+
+                  onValueChange={(value) => setValue("statut_tache", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allTaskStatus
+                      .filter(
+                        (status) =>
+                          status.nom_statut_tch === "PLANIFIED" ||
+                          status.nom_statut_tch === "REPORTED" ||
+                          status.nom_statut_tch === "CLOSED" ||
+                          status.nom_statut_tch === "CANCELED"
+                      )
+                      .map((status) => (
+                        <SelectItem key={status._id} value={status._id}>
+                          {status.nom_statut_tch}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm">
+                  {taskStatus?.nom_statut_tch && (
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full mr-1 ${statusColors[taskStatus?.nom_statut_tch] ||
+                        "bg-gray-400"
+                        }`}
+                    ></span>
+                  )}
+                  {taskStatus?.description_statut_tch}
+                </p>
+              )}
               {errors.statut_tache && (
                 <p className="text-sm text-red-500">
                   {errors.statut_tache.message}

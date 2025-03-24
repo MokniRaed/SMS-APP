@@ -18,7 +18,16 @@ export const TaskSchema = z.object({
   notes_tache: z.string().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional()
-});
+}).refine(
+  (data) => {
+    if (!data.date_execution_tache) return true; // Allow empty execution date
+    return new Date(data.date_execution_tache) > new Date(data.date_tache);
+  },
+  {
+    message: "Execution date must be greater than task date",
+    path: ["date_execution_tache"],
+  }
+);
 
 export type Task = z.infer<typeof TaskSchema>;
 
@@ -34,7 +43,7 @@ export const taskTypes = [
 // Updated task statuses to match French workflow
 export const taskStatuses = [
   { id: 'SAISIE', name: 'Saisie' },
-  { id: 'AFFECETD', name: 'Afféctée' },
+  { id: 'AFFECTED', name: 'Afféctée' },
   { id: 'ACCEPTED', name: 'Accéptée' },
   { id: 'PLANIFIED', name: 'Planifiée' },
   { id: 'REPORTED', name: 'Reportée' },
@@ -312,3 +321,34 @@ export async function getTaskStatusByName(name: string): Promise<any | undefined
     return null
   }
 }
+
+export function getStatusColor(statusName: string): string {
+  switch (statusName) {
+    case 'SAISIE':
+      return 'bg-gray-400';
+    case 'AFFECTED':
+      return 'bg-green-400';
+    case 'ACCEPTED':
+      return 'bg-purple-400';
+    case 'PLANIFIED':
+      return 'bg-blue-400';
+    case 'REPORTED':
+      return 'bg-orange-400';
+    case 'CLOSED':
+      return 'bg-red-400';
+    case 'CANCELED':
+      return 'bg-gray-400';
+    default:
+      return 'bg-gray-400';
+  }
+}
+
+export const statusColors: Record<string, string> = {
+  SAISIE: 'bg-gray-400',
+  AFFECTED: 'bg-green-400',
+  ACCEPTED: 'bg-purple-400',
+  PLANIFIED: 'bg-blue-400',
+  REPORTED: 'bg-orange-400',
+  CLOSED: 'bg-red-400',
+  CANCELED: 'bg-gray-400',
+};
