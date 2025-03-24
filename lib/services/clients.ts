@@ -23,6 +23,7 @@ export const ClientContactSchema = z.object({
   compte_whatsapp: z.string().optional(),
   compte_whatsapp_num: z.string().optional(),
   canal_interet: z.string().optional(),
+  is_user:z.boolean()
 });
 
 export type ClientContact = z.infer<typeof ClientContactSchema>;
@@ -34,11 +35,7 @@ export async function getFonctions(): Promise<FonctionContact[]> {
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for functions');
-    return [
-      { _id: '1', nom_fonc: 'Manager', description_fonc: 'Management position' },
-      { _id: '2', nom_fonc: 'Director', description_fonc: 'Director position' },
-      { _id: '3', nom_fonc: 'Supervisor', description_fonc: 'Supervision position' }
-    ];
+    return [    ];
   }
 }
 
@@ -48,7 +45,7 @@ export async function getClientContacts(): Promise<ClientContact[]> {
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for client contacts');
-    return mockClientContacts;
+    return [];
   }
 }
 
@@ -58,7 +55,7 @@ export async function getClientContact(id: string): Promise<ClientContact> {
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for client contact');
-    const contact = mockClientContacts.find(c => c.id === id);
+    const contact = [].find(c => c.id === id);
     if (!contact) throw new Error('Client contact not found');
     return contact;
   }
@@ -70,9 +67,10 @@ export async function createClientContact(contact: Omit<ClientContact, 'id'>): P
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for create client contact');
-    return {
+    return{
+      
       ...contact,
-      id: Math.random().toString(36).substr(2, 9)
+      // id: Math.random().toString(36).substr(2, 9)
     };
   }
 }

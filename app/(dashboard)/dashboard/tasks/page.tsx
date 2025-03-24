@@ -122,7 +122,6 @@ export default function TasksPage() {
     return sortOrder === 'asc' ? comparison : -comparison;
   }) : [];
 
-  console.log("sortedTasks", sortedTasks)
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {

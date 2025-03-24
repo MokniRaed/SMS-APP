@@ -1,6 +1,7 @@
 'use client';
 
 import api from '@/lib/axios';
+import { AxiosResponse } from 'axios';
 import { z } from 'zod';
 
 export const UserSchema = z.object({
@@ -143,6 +144,23 @@ export async function createUser(user: Omit<User, 'id'>): Promise<User> {
   try {
     const response = await api.post('/users', user);
     return response.data;
+  } catch (error) {
+    console.log("error", error);
+    return error.response.data
+    // console.warn('Falling back to mock data for create user');
+    // return {
+    //   ...user,
+    //   id: Math.random().toString(36).substr(2, 9),
+    //   createdAt: new Date().toISOString(),
+    //   updatedAt: new Date().toISOString()
+    // };
+  }
+}
+
+export async function MakeClientUser(clientId: string): Promise<AxiosResponse | any> {
+  try {
+    const response = await api.post(`/users/createFromClient/${clientId}`);
+    return response;
   } catch (error) {
     console.log("error", error);
     return error.response.data

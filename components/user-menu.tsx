@@ -30,7 +30,7 @@ export function UserMenu() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                        <AvatarFallback>{user?.initials}</AvatarFallback>
+                        <AvatarFallback>{user ? user?.username.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
                     </Avatar>
                 </Button>
             </DropdownMenuTrigger>
@@ -82,7 +82,7 @@ export function UserMenu() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 {/* To add : /api/auth/logout' to save login adn logout time */}
-                <DropdownMenuItem onClick={() => handleLogout()}>
+                <DropdownMenuItem onClick={() => handleLogout()} color="red">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                 </DropdownMenuItem>
