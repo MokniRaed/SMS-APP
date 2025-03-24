@@ -161,7 +161,7 @@ export default function ClientContactsPage() {
                   <span className="font-medium">Preferred Channel:</span> {contact.canal_interet}
                 </p>
                 <p className="text-sm">
-                  <span className="font-medium">User:</span><Badge color="green"> {contact?.is_user ==true ? "Yes": "No"} </Badge>
+                  <span className="font-medium">User: </span><Badge color="green"> {contact?.is_user ==true ? "Yes": "No"} </Badge>
                 </p>
               </div>
 
