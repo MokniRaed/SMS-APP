@@ -2,29 +2,43 @@
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuPortal,
     DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { getUserFromLocalStorage, handleLogout } from '@/lib/utils';
 import { LogOut, Moon, Settings, Sun, User } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export function UserMenu() {
     const router = useRouter();
     const { theme, setTheme } = useTheme();
+    const [isDarkMode, setIsDarkMode] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    // Ensure component is mounted before accessing theme information
+    useEffect(() => {
+        setMounted(true);
+        setIsDarkMode(theme === 'dark');
+    }, [theme]);
+
+    // Handle theme toggle
+    const handleToggleTheme = () => {
+        const newTheme = isDarkMode ? 'light' : 'dark';
+        setIsDarkMode(!isDarkMode);
+        setTheme(newTheme);
+    };
 
     const { user } = getUserFromLocalStorage() ?? {};
+    
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -53,36 +67,31 @@ export function UserMenu() {
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
                     </DropdownMenuItem>
-                    <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                            {theme === 'dark' ? (
+                    
+                    {/* Theme Toggle Switch */}
+                    <DropdownMenuItem 
+                        className="flex items-center justify-between"
+                        onSelect={(e) => {
+                            // Prevent the dropdown from closing when toggling theme
+                            e.preventDefault();
+                        }}
+                    >
+                        <div className="flex items-center">
+                            {mounted && isDarkMode ? (
                                 <Moon className="mr-2 h-4 w-4" />
                             ) : (
                                 <Sun className="mr-2 h-4 w-4" />
                             )}
-                            <span>Theme</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuPortal>
-                            <DropdownMenuSubContent>
-                                <DropdownMenuItem onClick={() => setTheme('light')}>
-                                    <Sun className="mr-2 h-4 w-4" />
-                                    <span>Light</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTheme('dark')}>
-                                    <Moon className="mr-2 h-4 w-4" />
-                                    <span>Dark</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTheme('system')}>
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    <span>System</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuSubContent>
-                        </DropdownMenuPortal>
-                    </DropdownMenuSub>
+                            <span>Dark Mode</span>
+                        </div>
+                        <Switch
+                            checked={mounted && isDarkMode}
+                            onCheckedChange={handleToggleTheme}
+                        />
+                    </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                {/* To add : /api/auth/logout' to save login adn logout time */}
-                <DropdownMenuItem onClick={() => handleLogout()} color="red">
+                <DropdownMenuItem onClick={() => handleLogout()} className="text-red-500">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                 </DropdownMenuItem>
