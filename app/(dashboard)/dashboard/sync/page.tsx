@@ -116,23 +116,29 @@ const exportTypes: DataType[] = [
     endpoint: '/projects/export'
   },
   {
-    id: 'info-libre',
-    name: 'Liste Information libre',
-    description: 'Export free information list',
-    endpoint: '/info-libre/export'
+    id: 'categories',
+    name: 'Categories',
+    description: 'Export Categories data',
+    endpoint: '/categories/export'
   },
+  // {
+  //   id: 'info-libre',
+  //   name: 'Liste Information libre',
+  //   description: 'Export free information list',
+  //   endpoint: '/info-libre/export'
+  // },
   {
     id: 'contacts',
     name: 'Liste Contacts client',
     description: 'Export client contacts',
     endpoint: '/clients/export-contacts'
   },
-  {
-    id: 'equipment',
-    name: 'Liste Equipements',
-    description: 'Export equipment list',
-    endpoint: '/equipment/export'
-  },
+  // {
+  //   id: 'equipment',
+  //   name: 'Liste Equipements',
+  //   description: 'Export equipment list',
+  //   endpoint: '/equipment/export'
+  // },
 ];
 
 interface FilePreview {

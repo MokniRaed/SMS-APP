@@ -246,21 +246,35 @@ export default function NewOrderPage() {
               {userRole !== 'client' && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Collaborator</label>
-                  <Select
-                    onValueChange={(value) => setValue('id_collaborateur', value)}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Collaborateur" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {collaborators.map((collaborator) => (
-                        <SelectItem key={collaborator._id} value={collaborator._id}>
-                          {collaborator.username}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {userRole === "collaborateur" ? (
+                  <>
+                    <p className="text-sm">{user?.username} (me)</p>
+                    <Input
+                      type="hidden"
+                      {...register("id_collaborateur")}
+                      defaultValue={user?.id}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Select
+                      onValueChange={(value) =>
+                        setValue("id_collaborateur", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select collaborator" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {collaborators.map((collab, index) => (
+                          <SelectItem key={index} value={collab._id}>
+                            {collab.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
                   {errors.id_collaborateur && (
                     <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>
                   )}
