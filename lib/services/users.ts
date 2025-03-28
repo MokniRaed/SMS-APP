@@ -87,10 +87,15 @@ export const AVAILABLE_PERMISSIONS = {
   settings: ['settings.view', 'settings.edit', 'settings.all']
 } as const;
 
-export async function getUsers(): Promise<User[]> {
+export async function getUsers(page: string = '1', limit: string = '10'): Promise<any> {
   try {
-    const response = await api.get('/users');
-    return response.data;
+    const response = await api.get('/users', {
+      params: {
+        page,
+        limit,
+      },
+    });
+    return response;
   } catch (error) {
     console.warn('Falling back to mock data for users');
     return mockUsers;

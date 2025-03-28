@@ -100,10 +100,15 @@ const mockProjects: Project[] = [
   }
 ];
 
-export async function getProjects(): Promise<Project[]> {
+export async function getProjects(page: string = '1', limit: string = '10'): Promise<any> {
   try {
-    const response = await api.get('/projects');
-    return response.data;
+    const response = await api.get('/projects', {
+      params: {
+        page,
+        limit,
+      },
+    });
+    return response;
   } catch (error) {
     console.warn('Falling back to mock data for projects');
     return mockProjects;

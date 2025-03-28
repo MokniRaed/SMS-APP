@@ -36,9 +36,10 @@ import { getUserFromLocalStorage } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowUpDown, BookCopy, Check, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type ViewMode = 'grid' | 'table';
 type SortField = 'date_cmd' | 'id_client' | 'statut_cmd';
@@ -56,13 +57,33 @@ export default function OrdersPage() {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [showBulkCancelDialog, setShowBulkCancelDialog] = useState(false);
   const { user } = getUserFromLocalStorage() ?? {};
+  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const limit = parseInt(searchParams.get('limit') || '10');
+
   const userRole = user?.role ?? '';
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['orders', userRole, user?.id],
-    queryFn: () => getOrders(userRole === 'client' ? user.clientId : undefined, userRole === 'collaborateur' ? user.id : undefined)
+  const { data: categoryData, isLoading } = useQuery({
+    queryKey: ['orders', userRole, user?.id, page, limit],
+    queryFn: () => getOrders(userRole === 'client' ? user.clientId : undefined, userRole === 'collaborateur' ? user.id : undefined, page.toString(), limit.toString())
   });
   console.log("user", user);
+
+  const orders = categoryData?.data || [];
+  const total = categoryData?.total;
+  const totalPages = Math.ceil(total / limit);
+
+  useEffect(() => {
+    setPage(1);
+  }, []);
+
+  const handleNextPage = () => {
+    setPage((prev) => prev + 1);
+  };
+
+  const handlePreviousPage = () => {
+    setPage((prev) => prev - 1);
+  };
 
 
   const mutations = {
@@ -505,6 +526,29 @@ export default function OrdersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <div className="flex items-center justify-center space-x-4 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePreviousPage}
+          disabled={page === 1}
+          className="flex items-center gap-1"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+        <span className="text-sm text-muted-foreground">Page {page}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleNextPage}
+          disabled={totalPages === undefined || page === totalPages}
+          className="flex items-center gap-1"
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }

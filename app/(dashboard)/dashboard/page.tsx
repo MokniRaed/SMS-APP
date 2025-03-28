@@ -48,10 +48,12 @@ const CustomYAxis = ({ ...props }) => (
 );
 
 export default function DashboardPage() {
-  const { data: contacts = [] } = useQuery({
+  const { data: contactsData = [] } = useQuery({
     queryKey: ['clientContacts'],
     queryFn: getClientContacts
   });
+
+  const contacts = contactsData?.data || [];
 
    const { user } = getUserFromLocalStorage() ?? {};
    const userRole = user?.role ?? '';
@@ -69,10 +71,12 @@ export default function DashboardPage() {
     queryFn: () => getOrders(userRole === 'client' ? user.clientId : undefined, userRole === 'collaborateur' ? user.id : undefined)
   });
 
-  const { data: projects = [] } = useQuery({
+  const { data: projectsData = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: getProjects
   });
+
+  const projects = projectsData?.data || [];
 
   console.log("orders",orders);
   
@@ -85,14 +89,17 @@ export default function DashboardPage() {
   const totalOrders = orders.length;
   // const totalOrderAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
 
+
+  console.log("contacts",contacts);
+
   // Calculate contact channel distribution
-  const channelDistribution = contacts.reduce((acc: Record<string, number>, contact) => {
+  const channelDistribution = contacts?.reduce((acc: Record<string, number>, contact) => {
     const channel = contact.canal_interet || 'Not Specified';
     acc[channel] = (acc[channel] || 0) + 1;
     return acc;
   }, {});
 
-  const channelData = Object.entries(channelDistribution).map(([name, value]) => ({
+ const channelData = Object?.entries(channelDistribution ?? {}).map(([name, value]) => ({
     name,
     value
   }));
@@ -148,17 +155,17 @@ export default function DashboardPage() {
   const contactMethods = [
     {
       name: 'Phone',
-      value: contacts.filter(c => c.numero_mobile || c.numero_fix).length,
+      value: contacts?.filter(c => c.numero_mobile || c.numero_fix).length,
       icon: Phone,
     },
     {
       name: 'Email',
-      value: contacts.filter(c => c.adresse_email).length,
+      value: contacts?.filter(c => c.adresse_email).length,
       icon: Mail,
     },
     {
       name: 'Social',
-      value: contacts.filter(c =>
+      value: contacts?.filter(c =>
         c.compte_facebook ||
         c.compte_instagram ||
         c.compte_linkedin ||

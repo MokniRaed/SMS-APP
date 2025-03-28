@@ -35,9 +35,10 @@ import { deleteProject, getProjects, Project, updateProject } from '@/lib/servic
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowUpDown, BookCopy, Calendar, LayoutGrid, MapPin, MoreVertical, Pencil, Plus, Table as TableIcon, Target, Trash2, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type ViewMode = 'grid' | 'table';
 type SortField = 'type_projet' | 'produit_cible' | 'statut_projet' | 'periode_date_debut';
@@ -52,15 +53,30 @@ export default function ProjectsPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
 
-  const { data: projects = [], isLoading } = useQuery({
-    queryKey: ['projects'],
-    queryFn: getProjects
+  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const limit = parseInt(searchParams.get('limit') || '10');
+
+  const { data: categoryData, isLoading } = useQuery({
+    queryKey: ['projects', page, limit],
+    queryFn: () => getProjects(page.toString(), limit.toString())
   });
 
-  // const { data: typeProject = [], isLoading } = useQuery({
-  //   queryKey: ['typeProject'],
-  //   queryFn: getProjects
-  // });
+  const projects = categoryData?.data || [];
+  const total = categoryData?.total;
+  const totalPages = Math.ceil(total / limit);
+
+  useEffect(() => {
+    setPage(1);
+  }, []);
+
+  const handleNextPage = () => {
+    setPage((prev) => prev + 1);
+  };
+
+  const handlePreviousPage = () => {
+    setPage((prev) => prev - 1);
+  };
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Project> }) => {
@@ -490,6 +506,29 @@ export default function ProjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <div className="flex items-center justify-center space-x-4 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePreviousPage}
+          disabled={page === 1}
+          className="flex items-center gap-1"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+        <span className="text-sm text-muted-foreground">Page {page}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleNextPage}
+          disabled={totalPages === undefined || page === totalPages}
+          className="flex items-center gap-1"
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }

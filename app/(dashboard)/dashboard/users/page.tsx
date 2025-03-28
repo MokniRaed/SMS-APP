@@ -26,9 +26,9 @@ import {
 import { deleteUser, getUsers } from '@/lib/services/users';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { LayoutGrid, Pencil, Plus, Shield, Table as TableIcon, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { LayoutGrid, Pencil, Plus, Shield, Table as TableIcon, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 type ViewMode = 'grid' | 'table';
@@ -38,11 +38,30 @@ export default function UsersPage() {
   const queryClient = useQueryClient();
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const limit = parseInt(searchParams.get('limit') || '10');
 
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: getUsers
+  const { data: categoryData, isLoading } = useQuery({
+    queryKey: ['users', page, limit],
+    queryFn: () => getUsers(page.toString(), limit.toString())
   });
+
+  const users = categoryData?.data || [];
+  const total = categoryData?.total;
+  const totalPages = Math.ceil(total / limit);
+
+  useEffect(() => {
+    setPage(1);
+  }, []);
+
+  const handleNextPage = () => {
+    setPage((prev) => prev + 1);
+  };
+
+  const handlePreviousPage = () => {
+    setPage((prev) => prev - 1);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: deleteUser,
@@ -150,7 +169,7 @@ export default function UsersPage() {
                   </Badge>
                 </TableCell> */}
                 {/* <TableCell>
-                  {user.lastLogin ? format(new Date(user.lastLogin), 'PP') : 'Never'}
+                  {format(new Date(user.lastLogin), 'PP') : 'Never'}
                 </TableCell> */}
                 <TableCell>
                   {format(new Date(user.createdAt!), 'PP')}
@@ -210,7 +229,29 @@ export default function UsersPage() {
       </div>
 
       {viewMode === 'grid' ? renderGridView() : renderTableView()}
-
+      <div className="flex items-center justify-center space-x-4 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePreviousPage}
+          disabled={page === 1}
+          className="flex items-center gap-1"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+        <span className="text-sm text-muted-foreground">Page {page}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleNextPage}
+          disabled={totalPages === undefined || page === totalPages}
+          className="flex items-center gap-1"
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
       <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

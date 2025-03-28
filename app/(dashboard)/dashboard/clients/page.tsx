@@ -29,49 +29,71 @@ import { MakeClientUser } from "@/lib/services/users";
 import { getUserFromLocalStorage } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpDown, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, UserRoundPlus } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type ViewMode = 'grid' | 'table';
 type SortOrder = 'asc' | 'desc';
-type SortField = 'nom_prenom_contact' | 'is_user' ;
-
+type SortField = 'nom_prenom_contact' | 'is_user';
 
 export default function ClientContactsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
-    const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-    const [sortField, setSortField] = useState<SortField>('is_user');
-  
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [sortField, setSortField] = useState<SortField>('is_user');
+  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const limit = parseInt(searchParams.get('limit') || '10');
+
   const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? '';
 
-  const { data: contacts = [], isLoading } = useQuery({
-    queryKey: ['clientContacts'],
-    queryFn: getClientContacts
+  const { data: categoryData, isLoading } = useQuery({
+    queryKey: ['clientContacts', page, limit],
+    queryFn: () => getClientContacts(page.toString(), limit.toString()),
   });
+console.log("categoryData",categoryData);
 
-  const sortedContacts = contacts ? [...contacts].sort((a, b) => {
-    let comparison = 0;
-    switch (sortField) {
-      case 'nom_prenom_contact':
-        comparison = a?.nom_prenom_contact.localeCompare(b?.nom_prenom_contact);
-        break;
-        case 'is_user':
-          comparison = (a?.is_user === b?.is_user) ? 0 : (a?.is_user ? 1 : -1);
-          break;
+  const contacts = categoryData?.data || [];
+  const total = categoryData?.total;
+  const totalPages = Math.ceil(total / limit);
 
-    }
-    return sortOrder === 'asc' ? comparison : -comparison;
-  }) : [];
+  useEffect(() => {
+    setPage(1);
+  }, []);
 
+  const handleNextPage = () => {
+    setPage((prev) => prev + 1);
+  };
+
+  const handlePreviousPage = () => {
+    setPage((prev) => prev - 1);
+  };
+
+  const sortedContacts = contacts
+    ? [...contacts].sort((a, b) => {
+        let comparison = 0;
+        switch (sortField) {
+          case 'nom_prenom_contact':
+            comparison = a?.nom_prenom_contact.localeCompare(
+              b?.nom_prenom_contact
+            );
+            break;
+          case 'is_user':
+            comparison = a?.is_user === b?.is_user ? 0 : a?.is_user ? 1 : -1;
+            break;
+        }
+        return sortOrder === 'asc' ? comparison : -comparison;
+      })
+    : [];
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      console.log("sorted", sortField)
+      console.log('sorted', sortField);
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
@@ -79,7 +101,7 @@ export default function ClientContactsPage() {
     }
   };
 
-  // TODO : make it reusable component 
+  // TODO : make it reusable component
   const renderSortButton = (field: SortField, label: string) => (
     <Button
       variant="ghost"
@@ -90,7 +112,6 @@ export default function ClientContactsPage() {
       <ArrowUpDown className="ml-2 h-4 w-4" />
     </Button>
   );
-  
 
   const deleteMutation = useMutation({
     mutationFn: deleteClientContact,
@@ -101,31 +122,28 @@ export default function ClientContactsPage() {
     },
     onError: () => {
       toast.error('Failed to delete contact');
-    }
+    },
   });
 
-    // TODO : apply same patter to other functions + handle error message from backend 
+  // TODO : apply same patter to other functions + handle error message from backend
 
-  const makeUser =async (clientId: string) => {
+  const makeUser = async (clientId: string) => {
     try {
-     const response =  await MakeClientUser(clientId);
-     console.log("response",response);
-     
-     if (response?.status ===201) {
-      toast.success('Client Account has been created');
-      queryClient.invalidateQueries({ queryKey: ['clientContacts'] });
+      const response = await MakeClientUser(clientId);
+      console.log('response', response);
 
-      // router.push('/dashboard/clients');
-     }else{
-      toast.error(`cannot create account ${response?.message}`);
+      if (response?.status === 201) {
+        toast.success('Client Account has been created');
+        queryClient.invalidateQueries({ queryKey: ['clientContacts'] });
 
-     }
-   
+        // router.push('/dashboard/clients');
+      } else {
+        toast.error(`cannot create account ${response?.message}`);
+      }
     } catch (error) {
       toast.error('Failed to create client contact');
-    } 
+    }
   };
-
 
   const renderGridView = () => {
     if (isLoading) {
@@ -145,8 +163,12 @@ export default function ClientContactsPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-semibold text-lg">{contact.nom_prenom_contact}</h3>
-                  <p className="text-sm text-muted-foreground">{contact?.fonction_contact?.nom_fonc}</p>
+                  <h3 className="font-semibold text-lg">
+                    {contact.nom_prenom_contact}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {contact?.fonction_contact?.nom_fonc}
+                  </p>
                 </div>
               </div>
 
@@ -155,13 +177,19 @@ export default function ClientContactsPage() {
                   <span className="font-medium">Email:</span> {contact.adresse_email}
                 </p>
                 <p className="text-sm">
-                  <span className="font-medium">Phone:</span> {contact.numero_mobile || contact.numero_fix}
+                  <span className="font-medium">Phone:</span>{' '}
+                  {contact.numero_mobile || contact.numero_fix}
                 </p>
                 <p className="text-sm">
-                  <span className="font-medium">Preferred Channel:</span> {contact.canal_interet}
+                  <span className="font-medium">Preferred Channel:</span>{' '}
+                  {contact.canal_interet}
                 </p>
                 <p className="text-sm">
-                  <span className="font-medium">User: </span><Badge color="green"> {contact?.is_user ==true ? "Yes": "No"} </Badge>
+                  <span className="font-medium">User: </span>
+                  <Badge color="green">
+                    {' '}
+                    {contact?.is_user == true ? 'Yes' : 'No'}{' '}
+                  </Badge>
                 </p>
               </div>
 
@@ -171,14 +199,16 @@ export default function ClientContactsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
+                      onClick={() =>
+                        router.push(`/dashboard/clients/${contact._id}/edit`)
+                      }
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDeleteContactId(contact.id)}
+                      onClick={() => setDeleteContactId(contact._id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -192,29 +222,6 @@ export default function ClientContactsPage() {
     );
   };
 
-
-
-  <div className="flex space-x-2">
-  {userRole !== 'collaborateur' && (
-    <>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
-      >
-        <Pencil className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setDeleteContactId(contact._id)}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </>
-  )}
-</div>
-
   const renderTableActions = (contact: any) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -223,19 +230,21 @@ export default function ClientContactsPage() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-      {!contact.is_user && <DropdownMenuItem      onClick={ () => makeUser(contact?.id_client)}
+        {!contact.is_user && (
+          <DropdownMenuItem onClick={() => makeUser(contact?.id_client)}>
+            <UserRoundPlus className="h-4 w-4 mr-2 " />
+            Make user
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem
+          onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
         >
-        <UserRoundPlus className="h-4 w-4 mr-2 " />
-          Make user
-        </DropdownMenuItem>}
-        <DropdownMenuItem      onClick={() => router.push(`/dashboard/clients/${contact._id}/edit`)}
-        >
-        <Pencil className="h-4 w-4 mr-2 " />
+          <Pencil className="h-4 w-4 mr-2 " />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
-        onClick={() => setDeleteContactId(contact._id)}
-        className="text-red-600"
+          onClick={() => setDeleteContactId(contact._id)}
+          className="text-red-600"
         >
           <Trash2 className="h-4 w-4 mr-2 " />
           Delete
@@ -243,7 +252,6 @@ export default function ClientContactsPage() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-
 
   const renderTableView = () => {
     if (isLoading) {
@@ -255,29 +263,38 @@ export default function ClientContactsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead> {renderSortButton('nom_prenom_contact','Name')}</TableHead>
+              <TableHead> {renderSortButton('nom_prenom_contact', 'Name')}</TableHead>
               <TableHead>Function</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Preferred Channel</TableHead>
-              <TableHead>{renderSortButton('is_user','User')}</TableHead>
+              <TableHead>
+                {renderSortButton('is_user', 'User')}
+              </TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedContacts.map((contact, index) => (
               <TableRow key={index}>
-                <TableCell className="font-medium">{contact.nom_prenom_contact}</TableCell>
+                <TableCell className="font-medium">
+                  {contact.nom_prenom_contact}
+                </TableCell>
                 <TableCell>{contact?.fonction_contact?.nom_fonc}</TableCell>
                 <TableCell>{contact?.adresse_email}</TableCell>
-                <TableCell>{contact?.numero_mobile || contact.numero_fix}</TableCell>
+                <TableCell>
+                  {contact?.numero_mobile || contact.numero_fix}
+                </TableCell>
                 <TableCell>{contact?.canal_interet}</TableCell>
-                <TableCell> <Badge >{contact?.is_user ==true ? "Yes": "No"}</Badge> </TableCell>
+                <TableCell>
+                  {' '}
+                  <Badge>{contact?.is_user == true ? 'Yes' : 'No'}</Badge>{' '}
+                </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
                     {userRole !== 'collaborateur' && (
                       <>
-                      {renderTableActions(contact)}
+                        {renderTableActions(contact)}
                       </>
                     )}
                   </div>
@@ -321,19 +338,48 @@ export default function ClientContactsPage() {
       </div>
 
       {viewMode === 'grid' ? renderGridView() : renderTableView()}
+      <div className="flex items-center justify-center space-x-4 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePreviousPage}
+          disabled={page === 1}
+          className="flex items-center gap-1"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+        <span className="text-sm text-muted-foreground">Page {page}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleNextPage}
+          disabled={totalPages === undefined || page === totalPages}
+          className="flex items-center gap-1"
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
 
-      <AlertDialog open={!!deleteContactId} onOpenChange={() => setDeleteContactId(null)}>
+      <AlertDialog
+        open={!!deleteContactId}
+        onOpenChange={() => setDeleteContactId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Contact</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this contact? This action cannot be undone.
+              Are you sure you want to delete this contact? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteContactId && deleteMutation.mutate(deleteContactId)}
+              onClick={() =>
+                deleteContactId && deleteMutation.mutate(deleteContactId)
+              }
             >
               Delete
             </AlertDialogAction>

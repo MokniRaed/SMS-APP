@@ -39,10 +39,15 @@ export async function getFonctions(): Promise<FonctionContact[]> {
   }
 }
 
-export async function getClientContacts(): Promise<ClientContact[]> {
+export async function getClientContacts(page: string = '1', limit: string = '10'): Promise<any> {
   try {
-    const response = await api.get('/clients/contacts');
-    return response.data;
+    const response = await api.get('/clients/contacts', {
+      params: {
+        page,
+        limit,
+      },
+    });
+    return response;
   } catch (error) {
     console.warn('Falling back to mock data for client contacts');
     return [];

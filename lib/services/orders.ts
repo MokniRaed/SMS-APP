@@ -62,7 +62,7 @@ export async function cancelOrder(id: string, reason: string): Promise<Order> {
 }
 
 // Base CRUD operations
-export async function getOrders(clientId?: string, collaboratorId?: string): Promise<Order[]> {
+export async function getOrders(clientId?: string, collaboratorId?: string, page: string = '1', limit: string = '10'): Promise<any> {
   try {
     console.log("clientId", clientId);
 
@@ -70,9 +70,11 @@ export async function getOrders(clientId?: string, collaboratorId?: string): Pro
       params: {
         id_client: clientId,
         id_collaborateur: collaboratorId,
+        page,
+        limit,
       },
     });
-    return response.data;
+    return response;
   } catch (error) {
     console.warn('Falling back to mock data for orders');
     return [];
