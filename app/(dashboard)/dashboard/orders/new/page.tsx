@@ -247,34 +247,34 @@ export default function NewOrderPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Collaborator</label>
                   {userRole === "collaborateur" ? (
-                  <>
-                    <p className="text-sm">{user?.username} (me)</p>
-                    <Input
-                      type="hidden"
-                      {...register("id_collaborateur")}
-                      defaultValue={user?.id}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <Select
-                      onValueChange={(value) =>
-                        setValue("id_collaborateur", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select collaborator" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {collaborators.map((collab, index) => (
-                          <SelectItem key={index} value={collab._id}>
-                            {collab.username}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </>
-                )}
+                    <>
+                      <p className="text-sm">{user?.username} (me)</p>
+                      <Input
+                        type="hidden"
+                        {...register("id_collaborateur")}
+                        defaultValue={user?.id}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Select
+                        onValueChange={(value) =>
+                          setValue("id_collaborateur", value)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select collaborator" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {collaborators.map((collab, index) => (
+                            <SelectItem key={index} value={collab._id}>
+                              {collab.username}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  )}
                   {errors.id_collaborateur && (
                     <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>
                   )}
@@ -297,7 +297,7 @@ export default function NewOrderPage() {
                       <SelectValue placeholder="Select client" />
                     </SelectTrigger>
                     <SelectContent>
-                      {clients.map((client) => (
+                      {clients?.data?.map((client) => (
                         <SelectItem key={client._id} value={client.id_client}>
                           {client.nom_prenom_contact}
                         </SelectItem>

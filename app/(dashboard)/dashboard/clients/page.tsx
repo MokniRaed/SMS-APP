@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CardSkeleton } from '@/components/ui/skeletons/card-skeleton';
 import { TableSkeleton } from '@/components/ui/skeletons/table-skeleton';
@@ -28,11 +29,10 @@ import { deleteClientContact, getClientContacts } from '@/lib/services/clients';
 import { MakeClientUser } from "@/lib/services/users";
 import { getUserFromLocalStorage } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, UserRoundPlus } from 'lucide-react';
+import { ArrowUpDown, ChevronLeft, ChevronRight, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, UserRoundPlus } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type ViewMode = 'grid' | 'table';
 type SortOrder = 'asc' | 'desc';
@@ -45,6 +45,7 @@ export default function ClientContactsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [sortField, setSortField] = useState<SortField>('is_user');
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const searchParams = useSearchParams();
   const limit = parseInt(searchParams.get('limit') || '10');
@@ -56,7 +57,7 @@ export default function ClientContactsPage() {
     queryKey: ['clientContacts', page, limit],
     queryFn: () => getClientContacts(page.toString(), limit.toString()),
   });
-console.log("categoryData",categoryData);
+  console.log("categoryData", categoryData);
 
   const contacts = categoryData?.data || [];
   const total = categoryData?.total;
@@ -76,19 +77,19 @@ console.log("categoryData",categoryData);
 
   const sortedContacts = contacts
     ? [...contacts].sort((a, b) => {
-        let comparison = 0;
-        switch (sortField) {
-          case 'nom_prenom_contact':
-            comparison = a?.nom_prenom_contact.localeCompare(
-              b?.nom_prenom_contact
-            );
-            break;
-          case 'is_user':
-            comparison = a?.is_user === b?.is_user ? 0 : a?.is_user ? 1 : -1;
-            break;
-        }
-        return sortOrder === 'asc' ? comparison : -comparison;
-      })
+      let comparison = 0;
+      switch (sortField) {
+        case 'nom_prenom_contact':
+          comparison = a?.nom_prenom_contact.localeCompare(
+            b?.nom_prenom_contact
+          );
+          break;
+        case 'is_user':
+          comparison = a?.is_user === b?.is_user ? 0 : a?.is_user ? 1 : -1;
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    })
     : [];
 
   const handleSort = (field: SortField) => {
@@ -98,6 +99,74 @@ console.log("categoryData",categoryData);
     } else {
       setSortField(field);
       setSortOrder('asc');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await Promise.all(
+        selectedContacts.map(contactId => deleteMutation.mutate(contactId))
+      );
+      setSelectedContacts([]);
+      toast.success('Contacts deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete contacts');
+    }
+  };
+
+  const handleBulkMakeUser = async () => {
+    try {
+      await Promise.all(
+        selectedContacts.map(async contactId => {
+          // Assuming MakeClientUser takes clientId as argument
+          const response = await MakeClientUser(contactId);
+          if (response?.status === 201) {
+            toast.success('Client Account has been created');
+            queryClient.invalidateQueries({ queryKey: ['clientContacts'] });
+          } else {
+            toast.error(`cannot create account ${response?.message}`);
+          }
+        })
+      );
+      setSelectedContacts([]);
+    } catch (error) {
+      toast.error('Failed to make users');
+    }
+  };
+
+  const renderBulkActions = () => (
+    <div className="flex items-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" disabled={selectedContacts.length === 0}>
+            Bulk Actions ({selectedContacts.length})
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={handleBulkDelete} className="text-red-600">
+            Delete Selected
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleBulkMakeUser}>
+            Make User
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedContacts(contacts.map(contact => contact._id));
+    } else {
+      setSelectedContacts([]);
+    }
+  };
+
+  const handleSelectContact = (contactId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedContacts(prev => [...prev, contactId]);
+    } else {
+      setSelectedContacts(prev => prev.filter(id => id !== contactId));
     }
   };
 
@@ -263,6 +332,14 @@ console.log("categoryData",categoryData);
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={selectedContacts.length === contacts.length}
+                  onCheckedChange={handleSelectAll}
+                />
+
+              </TableHead>
+              <TableHead>ID</TableHead>
               <TableHead> {renderSortButton('nom_prenom_contact', 'Name')}</TableHead>
               <TableHead>Function</TableHead>
               <TableHead>Email</TableHead>
@@ -277,6 +354,16 @@ console.log("categoryData",categoryData);
           <TableBody>
             {sortedContacts.map((contact, index) => (
               <TableRow key={index}>
+                <TableCell className="w-[50px]">
+                  <Checkbox
+                    checked={selectedContacts.includes(contact._id)}
+                    onCheckedChange={(checked) => handleSelectContact(contact._id, checked as boolean)}
+                  />
+
+                </TableCell>
+                <TableCell className="font-medium">
+                  {contact.id_client}
+                </TableCell>
                 <TableCell className="font-medium">
                   {contact.nom_prenom_contact}
                 </TableCell>
@@ -312,9 +399,10 @@ console.log("categoryData",categoryData);
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Client Contacts</h1>
         <div className="flex space-x-2">
+          {renderBulkActions()}
           <div className="border rounded-lg p-1">
             <Button
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="icon"
               onClick={() => setViewMode('grid')}
             >

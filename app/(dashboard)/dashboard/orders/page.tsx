@@ -35,11 +35,10 @@ import { cancelOrder, confirmOrder, deleteOrder, deliverOrder, getOrders, valida
 import { getUserFromLocalStorage } from '@/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { ArrowUpDown, BookCopy, Check, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, X } from 'lucide-react';
+import { ArrowUpDown, BookCopy, Check, ChevronLeft, ChevronRight, LayoutGrid, MoreVertical, Pencil, Plus, Table as TableIcon, Trash2, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type ViewMode = 'grid' | 'table';
 type SortField = 'date_cmd' | 'id_client' | 'statut_cmd';
@@ -342,7 +341,7 @@ export default function OrdersPage() {
                       onCheckedChange={(checked) => handleSelectOrder(order._id, checked as boolean)}
                     />
                   </TableCell>
-                  <TableCell>#{index}</TableCell>
+                  <TableCell>#{order?.id_order}</TableCell>
                   <TableCell>{format(new Date(order.date_cmd), 'PP')}</TableCell>
                   <TableCell>{order.id_client?.nom_prenom_contact}</TableCell>
                   <TableCell>

@@ -106,7 +106,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
         queryFn: () => getLineCommandsByOrder(params.id),
         enabled: !!order
     });
-
+    //TODO : check
     const { data: clients = [] } = useQuery({
         queryKey: ['clientContacts'],
         queryFn: getClientContacts
@@ -382,7 +382,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                 <CardHeader>
                     <div className="flex justify-between items-center">
 
-                        <CardTitle>Edit Order #{order._id}</CardTitle>
+                        <CardTitle>Edit Order #{order?.id_order}</CardTitle>
                         <Button variant="ghost" onClick={() => router.back()}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back
@@ -397,34 +397,34 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Collaborator</label>
                                     {userRole === "collaborateur" ? (
-                  <>
-                    <p className="text-sm">{user?.username} (me)</p>
-                    <Input
-                      type="hidden"
-                      {...register("id_collaborateur")}
-                      defaultValue={user?.id}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <Select
-                      onValueChange={(value) =>
-                        setValue("id_collaborateur", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select collaborator" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {collaborators.map((collab, index) => (
-                          <SelectItem key={index} value={collab._id}>
-                            {collab.username}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </>
-                )}
+                                        <>
+                                            <p className="text-sm">{user?.username} (me)</p>
+                                            <Input
+                                                type="hidden"
+                                                {...register("id_collaborateur")}
+                                                defaultValue={user?.id}
+                                            />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Select
+                                                onValueChange={(value) =>
+                                                    setValue("id_collaborateur", value)
+                                                }
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select collaborator" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {collaborators.map((collab, index) => (
+                                                        <SelectItem key={index} value={collab._id}>
+                                                            {collab.username}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </>
+                                    )}
                                     {errors.id_collaborateur && (
                                         <p className="text-sm text-red-500">{errors.id_collaborateur.message}</p>
                                     )}
@@ -448,7 +448,8 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
                                             <SelectValue placeholder="Select client" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {clients.map((client) => (
+
+                                            {clients?.data?.map((client) => (
                                                 <SelectItem key={client._id} value={client.id_client}>
                                                     {client.nom_prenom_contact}
                                                 </SelectItem>
