@@ -27,7 +27,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -36,7 +36,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = getUserFromLocalStorage() ?? {};
   const userRole = user?.role ?? "";
-  
+
   const { data: task, isLoading: isLoadingTask } = useQuery({
     queryKey: ["task", params.id],
     queryFn: () => getTask(params.id),
@@ -81,7 +81,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   const selectedCollaborator = watch("id_collaborateur");
   const dateExecutionTache = watch("date_execution_tache");
   const currentStatus = watch("statut_tache");
-  
+
   // Initialize form values when task data is loaded
   useEffect(() => {
     if (task) {
@@ -104,25 +104,25 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   const currentStatusObject = allTaskStatus.find(
     status => status._id === currentStatus
   );
-  
+
   // Get allowed next statuses based on role and current status
   const getAllowedStatusTransitions = () => {
     if (!currentStatusObject || !allTaskStatus.length) return [];
-    
+
     const currentStatusName = currentStatusObject.nom_statut_tch;
-    
+
     if (userRole === "admin") {
       // Admin can change to any status
       if (currentStatusName === "SAISIE") {
         // Can move to AFFECTED if collaborator is selected
-        return allTaskStatus.filter(s => 
-          s.nom_statut_tch === "SAISIE" || 
+        return allTaskStatus.filter(s =>
+          s.nom_statut_tch === "SAISIE" ||
           (s.nom_statut_tch === "AFFECTED" && selectedCollaborator)
         );
       } else if (currentStatusName === "AFFECTED") {
         // Can move to PLANIFIED if execution date is set
-        return allTaskStatus.filter(s => 
-          s.nom_statut_tch === "AFFECTED" || 
+        return allTaskStatus.filter(s =>
+          s.nom_statut_tch === "AFFECTED" ||
           (s.nom_statut_tch === "PLANIFIED" && dateExecutionTache)
         );
       } else {
@@ -133,16 +133,16 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
       // Collaborator has limited transitions
       if (currentStatusName === "AFFECTED") {
         // Can only accept task or keep as is
-        return allTaskStatus.filter(s => 
-          s.nom_statut_tch === "AFFECTED" || 
+        return allTaskStatus.filter(s =>
+          s.nom_statut_tch === "AFFECTED" ||
           s.nom_statut_tch === "ACCEPTED"
         );
       } else if (currentStatusName === "PLANIFIED") {
         // Can report, close or cancel
-        return allTaskStatus.filter(s => 
-          s.nom_statut_tch === "PLANIFIED" || 
-          s.nom_statut_tch === "REPORTED" || 
-          s.nom_statut_tch === "CLOSED" || 
+        return allTaskStatus.filter(s =>
+          s.nom_statut_tch === "PLANIFIED" ||
+          s.nom_statut_tch === "REPORTED" ||
+          s.nom_statut_tch === "CLOSED" ||
           s.nom_statut_tch === "CANCELED"
         );
       } else {
@@ -150,7 +150,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
         return allTaskStatus.filter(s => s._id === currentStatus);
       }
     }
-    
+
     return [];
   };
 
@@ -159,11 +159,11 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   // Automatically update status when certain fields change
   useEffect(() => {
     if (!allTaskStatus.length) return;
-    
+
     if (userRole === "admin") {
       // Handle automatic status transitions for admin
       const currentStatusName = currentStatusObject?.nom_statut_tch;
-      
+
       if (currentStatusName === "SAISIE" && selectedCollaborator) {
         // Auto change to AFFECTED when admin selects collaborator
         const affectedStatus = allTaskStatus.find(s => s.nom_statut_tch === "AFFECTED");
@@ -272,7 +272,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client) => (
+                    {clients?.data?.map((client) => (
                       <SelectItem key={client._id} value={client._id}>
                         {client.nom_prenom_contact}
                       </SelectItem>
@@ -299,7 +299,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map((project) => (
+                    {projects?.data?.map((project) => (
                       <SelectItem key={project._id} value={project._id}>
                         {project.nom_projet}
                       </SelectItem>
@@ -373,9 +373,9 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                   type="date"
                   {...register("date_execution_tache")}
                   disabled={
-                    isSubmitting || 
-                    !selectedCollaborator || 
-                    getStatusName(currentStatus) === "CLOSED" || 
+                    isSubmitting ||
+                    !selectedCollaborator ||
+                    getStatusName(currentStatus) === "CLOSED" ||
                     getStatusName(currentStatus) === "CANCELED"
                   }
                 />
@@ -408,9 +408,8 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
                       <SelectItem key={status._id} value={status._id}>
                         <div className="flex items-center">
                           <span
-                            className={`inline-block h-2 w-2 rounded-full mr-2 ${
-                              statusColors[status.nom_statut_tch] || "bg-gray-400"
-                            }`}
+                            className={`inline-block h-2 w-2 rounded-full mr-2 ${statusColors[status.nom_statut_tch] || "bg-gray-400"
+                              }`}
                           ></span>
                           {status.description_statut_tch}
                         </div>
@@ -421,9 +420,8 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
               ) : (
                 <div className="flex items-center p-2 border rounded">
                   <span
-                    className={`inline-block h-2 w-2 rounded-full mr-2 ${
-                      statusColors[currentStatusObject?.nom_statut_tch || ""] || "bg-gray-400"
-                    }`}
+                    className={`inline-block h-2 w-2 rounded-full mr-2 ${statusColors[currentStatusObject?.nom_statut_tch || ""] || "bg-gray-400"
+                      }`}
                   ></span>
                   <span>{currentStatusObject?.description_statut_tch}</span>
                 </div>
@@ -463,7 +461,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
               <Textarea
                 {...register("compte_rendu_tache")}
                 disabled={
-                  isSubmitting || 
+                  isSubmitting ||
                   !["PLANIFIED", "REPORTED", "CLOSED"].includes(getStatusName(currentStatus))
                 }
               />
@@ -486,6 +484,7 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
 
             <div className="flex justify-end space-x-4">
               <Button
+                type="button"
                 variant="outline"
                 onClick={() => router.back()}
                 disabled={isSubmitting}

@@ -1,5 +1,6 @@
 'use client';
 
+import Loader from '@/components/Loader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -85,7 +86,7 @@ export default function DuplicateTaskPage({ params }: { params: { id: string } }
     }
   };
 
-  if (isLoadingTask) return <div>Loading...</div>;
+  if (isLoadingTask) return <Loader />;
   if (!task) return <div>Task not found</div>;
 
   return (
@@ -139,7 +140,7 @@ export default function DuplicateTaskPage({ params }: { params: { id: string } }
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client) => (
+                    {clients?.data?.map((client) => (
                       <SelectItem key={client._id} value={client._id}>
                         {client.nom_prenom_contact}
                       </SelectItem>
@@ -161,7 +162,7 @@ export default function DuplicateTaskPage({ params }: { params: { id: string } }
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map((project) => (
+                    {projects?.data?.map((project) => (
                       <SelectItem key={project._id} value={project._id}>
                         {project.nom_projet}
                       </SelectItem>

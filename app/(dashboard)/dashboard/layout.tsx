@@ -54,7 +54,7 @@ export default function DashboardLayout({
       {/* <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r px-6 py-4">
           <div className="flex h-16 shrink-0 items-center">
-            <h1 className="text-2xl font-bold">Task Manager</h1>
+            <h1 className="text-2xl font-bold">SMS Manager</h1>
           </div>
           <nav className="flex flex-1 flex-col gap-4">
             {navigation.map((item) => {

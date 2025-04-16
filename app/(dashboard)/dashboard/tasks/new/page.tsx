@@ -160,7 +160,7 @@ export default function NewTaskPage() {
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client, index) => (
+                    {clients?.data?.map((client, index) => (
                       <SelectItem key={index} value={client._id}>
                         {client.nom_prenom_contact}
                       </SelectItem>
@@ -183,7 +183,7 @@ export default function NewTaskPage() {
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map((project, index) => (
+                    {projects?.data?.map((project, index) => (
                       <SelectItem key={index} value={project._id}>
                         {project.nom_projet}
                       </SelectItem>
