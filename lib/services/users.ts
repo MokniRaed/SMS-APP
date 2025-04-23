@@ -23,7 +23,7 @@ export type User = z.infer<typeof UserSchema>;
 const mockUsers: User[] = [
   {
     id: '1',
-    name: 'John Doe',
+    username: 'John Doe',
     email: 'john.doe@example.com',
     role: 'ADMIN',
     permissions: ['users.all', 'projects.all', 'tasks.all'],
@@ -34,7 +34,7 @@ const mockUsers: User[] = [
   },
   {
     id: '2',
-    name: 'Jane Smith',
+    username: 'Jane Smith',
     email: 'jane.smith@example.com',
     role: 'MANAGER',
     permissions: ['projects.view', 'projects.create', 'tasks.all'],
@@ -45,7 +45,7 @@ const mockUsers: User[] = [
   },
   {
     id: '3',
-    name: 'Mike Johnson',
+    username: 'Mike Johnson',
     email: 'mike.johnson@example.com',
     role: 'USER',
     permissions: ['tasks.view', 'tasks.create'],
@@ -56,7 +56,7 @@ const mockUsers: User[] = [
   },
   {
     id: '4',
-    name: 'Sarah Wilson',
+    username: 'Sarah Wilson',
     email: 'sarah.wilson@example.com',
     role: 'MANAGER',
     permissions: ['projects.all', 'tasks.all'],
@@ -67,7 +67,7 @@ const mockUsers: User[] = [
   },
   {
     id: '5',
-    name: 'David Brown',
+    username: 'David Brown',
     email: 'david.brown@example.com',
     role: 'USER',
     permissions: ['tasks.view'],
@@ -149,6 +149,23 @@ export async function createUser(user: Omit<User, 'id'>): Promise<User> {
   try {
     const response = await api.post('/users', user);
     return response.data;
+  } catch (error) {
+    console.log("error", error);
+    return error.response.data
+    // console.warn('Falling back to mock data for create user');
+    // return {
+    //   ...user,
+    //   id: Math.random().toString(36).substr(2, 9),
+    //   createdAt: new Date().toISOString(),
+    //   updatedAt: new Date().toISOString()
+    // };
+  }
+}
+
+export async function MakeCollaboratorUser(id_collab: string): Promise<AxiosResponse | any> {
+  try {
+    const response = await api.post(`/users/createFromCollab/${id_collab}`);
+    return response;
   } catch (error) {
     console.log("error", error);
     return error.response.data

@@ -9,7 +9,7 @@ export const ProjectSchema = z.object({
   description_projet: z.string().optional(),
   objectif_ca: z.number().optional(),
   objectif_qte: z.number().optional(),
-  zone_cible: z.string().optional(),
+  zone_cible: z.array(z.string()).optional(),
   periode_date_debut: z.string().min(1, 'Date is required'),
   periode_date_fin: z.string().min(1, 'Date is required'),
   statut_projet: z.string().min(1, 'Project status is required'),
@@ -27,7 +27,7 @@ const mockProjects: Project[] = [
     description_projet: 'Develop a new mobile application for client management',
     objectif_ca: 150000,
     objectif_qte: 1,
-    zone_cible: 'North America',
+    zone_cible: ['North America'],
     periode_date_debut: '2024-03-01T00:00:00Z',
     periode_date_fin: '2024-06-30T00:00:00Z',
     statut_projet: 'IN_PROGRESS',
@@ -40,7 +40,7 @@ const mockProjects: Project[] = [
     description_projet: 'Conduct market research for expansion opportunities',
     objectif_ca: 50000,
     objectif_qte: 1,
-    zone_cible: 'Europe',
+    zone_cible: ['Europe'],
     periode_date_debut: '2024-04-01T00:00:00Z',
     periode_date_fin: '2024-05-31T00:00:00Z',
     statut_projet: 'PLANNED',
@@ -53,7 +53,7 @@ const mockProjects: Project[] = [
     description_projet: 'Upgrade and maintain existing client systems',
     objectif_ca: 75000,
     objectif_qte: 5,
-    zone_cible: 'Global',
+    zone_cible: ['Global'],
     periode_date_debut: '2024-03-15T00:00:00Z',
     periode_date_fin: '2024-12-31T00:00:00Z',
     statut_projet: 'IN_PROGRESS',
@@ -66,7 +66,7 @@ const mockProjects: Project[] = [
     description_projet: 'Build a new e-commerce platform with advanced features',
     objectif_ca: 200000,
     objectif_qte: 1,
-    zone_cible: 'Asia Pacific',
+    zone_cible: ['Asia Pacific'],
     periode_date_debut: '2024-05-01T00:00:00Z',
     periode_date_fin: '2024-11-30T00:00:00Z',
     statut_projet: 'PLANNED',
@@ -79,7 +79,7 @@ const mockProjects: Project[] = [
     description_projet: 'Research and implement AI solutions for automation',
     objectif_ca: 100000,
     objectif_qte: 2,
-    zone_cible: 'Global',
+    zone_cible: ['Global'],
     periode_date_debut: '2024-04-15T00:00:00Z',
     periode_date_fin: '2024-08-31T00:00:00Z',
     statut_projet: 'IN_PROGRESS',
@@ -92,7 +92,7 @@ const mockProjects: Project[] = [
     description_projet: 'Implement security updates across client systems',
     objectif_ca: 80000,
     objectif_qte: 10,
-    zone_cible: 'North America',
+    zone_cible: ['North America'],
     periode_date_debut: '2024-03-01T00:00:00Z',
     periode_date_fin: '2024-05-31T00:00:00Z',
     statut_projet: 'COMPLETED',
@@ -199,3 +199,51 @@ export async function getProjectsZones(): Promise<Project[]> {
     return mockProjects;
   }
 }
+export async function getProjectsZonesDropdown({
+  pageParam = 1,
+  search,
+}: {
+  pageParam?: number;
+  search?: string;
+}): Promise<{ data: Project[]; nextPage: number | null }> {
+  try {
+    const response = await api.get('/projects/zones/dropdown', {
+      params: {
+        page: pageParam,
+        limit: 10,
+        search, // Add search parameter to API call
+      },
+    });
+    console.log("response", response);
+
+
+    return {
+      data: response.data,
+      nextPage: response.nextPage,
+    };
+  } catch (error) {
+    console.warn('Falling back to mock data for projects');
+    return { data: mockProjects, nextPage: null };
+  }
+}
+
+// export async function getProjectsZones({ pageParam = 1 }): Promise<{ data: Project[]; nextPage: number | null }> {
+//   try {
+//     const response = await api.get('/projects/zones', {
+//       params: {
+//         page: pageParam,
+//         limit: 20, // or any chunk size
+//       },
+//     });
+
+//     const hasMore = response.data.length === 20;
+//     return {
+//       data: response.data,
+//       nextPage: hasMore ? pageParam + 1 : null,
+//     };
+//   } catch (error) {
+//     console.warn('Falling back to mock data for projects');
+//     return { data: mockProjects, nextPage: null };
+//   }
+// }
+

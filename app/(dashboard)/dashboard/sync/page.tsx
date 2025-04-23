@@ -68,7 +68,7 @@ const importTypes: DataType[] = [
     id: 'collaborateurs',
     name: 'Collaborateurs',
     description: 'Import collaborator data',
-    endpoint: '/collaborators/upload-collaborators'
+    endpoint: '/collaborators/upload'
   },
   {
     id: 'zones',

@@ -55,18 +55,18 @@ export default function DashboardPage() {
 
   const contacts = contactsData?.data || [];
 
-   const { user } = getUserFromLocalStorage() ?? {};
-   const userRole = user?.role ?? '';
-   const roleId = userRole === 'collaborateur' ? { collaboratorId: user.id } : { adminId: user.id }
- 
-   const { data: tasksData = [], isLoading } = useQuery({
-     queryKey: ['tasks', userRole, user?.id],
-     queryFn: () => getTasks({ ...roleId}),
-   });
- 
-   const tasks = tasksData?.data || [];
+  const { user } = getUserFromLocalStorage() ?? {};
+  const userRole = user?.role ?? '';
+  const roleId = userRole === 'collaborateur' ? { collaboratorId: user.id } : { adminId: user.id }
 
-   const { data: orders = [] } = useQuery({
+  const { data: tasksData = [], isLoading } = useQuery({
+    queryKey: ['tasks', userRole, user?.id],
+    queryFn: () => getTasks({ ...roleId }),
+  });
+
+  const tasks = tasksData?.data || [];
+
+  const { data: orders = [] } = useQuery({
     queryKey: ['orders', userRole, user?.id],
     queryFn: () => getOrders(userRole === 'client' ? user.clientId : undefined, userRole === 'collaborateur' ? user.id : undefined)
   });
@@ -78,19 +78,18 @@ export default function DashboardPage() {
 
   const projects = projectsData?.data || [];
 
-  console.log("orders",orders);
-  
+
   // Calculate key metrics
   const totalContacts = contacts.length;
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(task => task.statut_tache?.nom_statut_tch === 'CLOSED').length;
   const taskCompletionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const activeProjects = projects.filter(project => project.statut_projet?.nom_statut_prj === 'PENDING').length;
-  const totalOrders = orders.length;
+  const totalOrders = orders?.data?.length;
   // const totalOrderAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
 
 
-  console.log("contacts",contacts);
+  console.log("contacts", contacts);
 
   // Calculate contact channel distribution
   const channelDistribution = contacts?.reduce((acc: Record<string, number>, contact) => {
@@ -99,7 +98,7 @@ export default function DashboardPage() {
     return acc;
   }, {});
 
- const channelData = Object?.entries(channelDistribution ?? {}).map(([name, value]) => ({
+  const channelData = Object?.entries(channelDistribution ?? {}).map(([name, value]) => ({
     name,
     value
   }));

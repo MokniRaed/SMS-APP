@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { UserMenu } from '@/components/user-menu';
 import { getUserFromLocalStorage, handleLogout } from '@/lib/utils';
-import { Boxes, Briefcase, ChevronLeft, ChevronRight, Database, FileText, Handshake, Home, LogOut, Menu, MessageSquareDot, Settings, ShoppingCart, Users } from 'lucide-react';
+import { Boxes, Briefcase, ChevronLeft, ChevronRight, Database, FileText, Handshake, Home, LogOut, Menu, MessageSquareDot, Puzzle, Settings, ShoppingCart, Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -31,6 +31,7 @@ const navigationGroups = [
     items: [
       { name: 'Projects', href: '/dashboard/projects', icon: Briefcase, roles: ['admin', 'collaborateur'] },
       { name: 'Clients', href: '/dashboard/clients', icon: Handshake, roles: ['admin', 'collaborateur'] },
+      { name: 'Collaborators', href: '/dashboard/collaborators', icon: Puzzle, roles: ['admin', 'collaborateur'] },
       { name: 'Categories', href: '/dashboard/categories', icon: Boxes, roles: ['admin', 'collaborateur'] },
     ],
   },
@@ -224,16 +225,16 @@ export default function DashboardLayout({
             })}
 
 
-            <Button variant="ghost" className={`justify-start gap-2 mt-auto ${collapsed ? 'px-0 justify-center' : ''}`} onClick={() => handleLogout()}>
+            {/* <Button variant="ghost" className={`justify-start gap-2 mt-auto ${collapsed ? 'px-0 justify-center' : ''}`} onClick={() => handleLogout()}>
               <LogOut className="h-5 w-5" />
               {!collapsed && "Logout"}
-            </Button>
+            </Button> */}
           </nav>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className={`${collapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
         {/* Top bar */}
         <div className="fixed top-0 right-0 left-0 lg:left-64 h-16 border-b bg-background z-40">
           <div className="flex items-center justify-end h-full px-4 space-x-4">

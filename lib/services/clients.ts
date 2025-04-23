@@ -23,7 +23,7 @@ export const ClientContactSchema = z.object({
   compte_whatsapp: z.string().optional(),
   compte_whatsapp_num: z.string().optional(),
   canal_interet: z.string().optional(),
-  is_user:z.boolean()
+  is_user: z.boolean()
 });
 
 export type ClientContact = z.infer<typeof ClientContactSchema>;
@@ -35,7 +35,22 @@ export async function getFonctions(): Promise<FonctionContact[]> {
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for functions');
-    return [    ];
+    return [];
+  }
+}
+
+export async function getCollaboratorContacts(page: string = '1', limit: string = '10'): Promise<any> {
+  try {
+    const response = await api.get('/collaborators/contacts', {
+      params: {
+        page,
+        limit,
+      },
+    });
+    return response;
+  } catch (error) {
+    console.warn('Falling back to mock data for collaborator contacts');
+    return [];
   }
 }
 
@@ -72,8 +87,8 @@ export async function createClientContact(contact: Omit<ClientContact, 'id'>): P
     return response.data;
   } catch (error) {
     console.warn('Falling back to mock data for create client contact');
-    return{
-      
+    return {
+
       ...contact,
       // id: Math.random().toString(36).substr(2, 9)
     };
@@ -90,6 +105,29 @@ export async function updateClientContact(id: string, contact: Partial<ClientCon
     return {
       ...existingContact,
       ...contact
+    };
+  }
+}
+
+export async function deleteCollaboratorContact(id: string): Promise<void> {
+  try {
+    await api.delete(`/collaborators/contacts/${id}`);
+  } catch (error) {
+    console.warn('Falling back to mock data for delete collaborator contact');
+    return Promise.resolve();
+  }
+}
+
+export async function createCollaboratorContact(contact: Omit<ClientContact, 'id'>): Promise<ClientContact> {
+  try {
+    const response = await api.post('/collaborators/contacts', contact);
+    return response.data;
+  } catch (error) {
+    console.warn('Falling back to mock data for create collaborator contact');
+    return {
+
+      ...contact,
+      // id: Math.random().toString(36).substr(2, 9)
     };
   }
 }

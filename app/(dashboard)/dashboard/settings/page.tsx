@@ -82,18 +82,18 @@ const CATEGORY_CONFIG = {
             function: 'nom_fonc'
         }
     },
-    orders: {
-        title: 'Order Parameters',
-        types: ['status', 'type'] as const,
-        queryKeys: {
-            status: 'statutcmds',
-            type: 'statutartcmds'
-        },
-        fieldMappings: {
-            status: 'description',
-            type: 'description'
-        }
-    }
+    // orders: {
+    //     title: 'Order Parameters',
+    //     types: ['status', 'type'] as const,
+    //     queryKeys: {
+    //         status: 'statutcmds',
+    //         type: 'statutartcmds'
+    //     },
+    //     fieldMappings: {
+    //         status: 'description',
+    //         type: 'description'
+    //     }
+    // }
 } as const;
 
 export default function SettingsPage() {
