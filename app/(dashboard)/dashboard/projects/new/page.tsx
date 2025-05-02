@@ -56,7 +56,7 @@ export default function NewProjectPage() {
     defaultValues: {
       periode_date_debut: new Date().toISOString(),
       periode_date_fin: new Date().toISOString(),
-      statut_projet: 'PLANNED',
+      statut_projet: '67b479ac2de01c070a310777',
     },
   });
 
@@ -215,8 +215,8 @@ export default function NewProjectPage() {
                     Revenue Objective
                   </label>
                   <Input
-                    type="number"
-                    {...register('objectif_ca', { valueAsNumber: true })}
+                    type="string"
+                    {...('objectif_ca', { valueAsNumber: true })}
                     disabled={isSubmitting}
                   />
                   {errors.objectif_ca && (
@@ -272,7 +272,8 @@ export default function NewProjectPage() {
                     });
                   }}
                   isLoading={isLoading}
-                  allFetchedZones={Array.from(allFetchedZones.values())} // Add this
+                  allFetchedZones={Array.from(allFetchedZones.values())}
+                  multiple={true}
                 />
 
 
@@ -320,7 +321,7 @@ export default function NewProjectPage() {
                   disabled={isSubmitting}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Product Cible" />
+                    <SelectValue placeholder="status" />
                   </SelectTrigger>
                   <SelectContent>
                     {projectStatus.map((status) => (
@@ -352,13 +353,13 @@ export default function NewProjectPage() {
             </div>
 
             <div className="flex justify-end space-x-4">
+
               <Button
+                type="button"
                 variant="outline"
                 onClick={() => router.back()}
                 disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
+              >Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>

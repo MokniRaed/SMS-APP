@@ -1,13 +1,11 @@
 'use client';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { AVAILABLE_PERMISSIONS, getRoles, getUser, UserSchema, type User } from '@/lib/services/users';
+import { getRoles, getUser, UserSchema, type User } from '@/lib/services/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -34,8 +32,10 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     resolver: zodResolver(UserSchema),
     values: user
   });
+  console.log("errors", errors);
 
-  const selectedPermissions = watch('permissions');
+
+  // const selectedPermissions = watch('permissions');
 
   const onSubmit = async (data: User) => {
     setIsSubmitting(true);
@@ -57,14 +57,14 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     }
   };
 
-  const handlePermissionToggle = (permission: string, checked: boolean) => {
-    const currentPermissions = selectedPermissions || [];
-    if (checked) {
-      setValue('permissions', [...currentPermissions, permission]);
-    } else {
-      setValue('permissions', currentPermissions.filter(p => p !== permission));
-    }
-  };
+  // const handlePermissionToggle = (permission: string, checked: boolean) => {
+  //   const currentPermissions = selectedPermissions || [];
+  //   if (checked) {
+  //     setValue('permissions', [...currentPermissions, permission]);
+  //   } else {
+  //     setValue('permissions', currentPermissions.filter(p => p !== permission));
+  //   }
+  // };
 
   if (isLoading) return <div>Loading...</div>;
   if (!user) return <div>User not found</div>;
@@ -125,7 +125,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              {/* <div className="space-y-4">
                 <label className="text-sm font-medium">Permissions</label>
                 <Accordion type="multiple">
                   {Object.entries(AVAILABLE_PERMISSIONS).map(([category, permissions]) => (
@@ -159,7 +159,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                 {errors.permissions && (
                   <p className="text-sm text-red-500">{errors.permissions.message}</p>
                 )}
-              </div>
+              </div> */}
             </div>
 
             <div className="flex justify-end space-x-4">

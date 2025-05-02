@@ -85,18 +85,19 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
   // Initialize form values when task data is loaded
   useEffect(() => {
     if (task) {
-      setValue("title_tache", task.title_tache);
-      setValue("type_tache", task.type_tache._id);
-      setValue("id_client", task.id_client._id);
-      setValue("id_projet", task.id_projet._id);
-      setValue("id_collaborateur", task.id_collaborateur?._id);
-      setValue("statut_tache", task.statut_tache._id);
-      setValue("date_tache", task.date_tache ? task.date_tache.split("T")[0] : "");
-      setValue("date_execution_tache", task.date_execution_tache ? task.date_execution_tache.split("T")[0] : "");
-      setValue("description_tache", task.description_tache);
-      setValue("adresse_tache", task.adresse_tache);
-      setValue("compte_rendu_tache", task.compte_rendu_tache);
-      setValue("notes_tache", task.notes_tache);
+      setValue("title_tache", task?.title_tache);
+      setValue("type_tache", task?.type_tache._id);
+      setValue("id_client", task?.id_client?._id);
+      setValue("id_projet", task?.id_projet?._id);
+      setValue("id_collaborateur", task?.id_collaborateur?._id);
+      setValue("statut_tache", task?.statut_tache?._id);
+      setValue("date_tache", task?.date_tache ? task.date_tache.split("T")[0] : "");
+      setValue("date_execution_tache", task?.date_execution_tache ? task.date_execution_tache.split("T")[0] : "");
+      setValue("description_tache", task?.description_tache);
+      setValue("adresse_tache", task?.adresse_tache);
+      setValue("compte_rendu_tache", task?.compte_rendu_tache);
+      setValue("notes_tache", task?.notes_tache)
+
     }
   }, [task, setValue]);
 

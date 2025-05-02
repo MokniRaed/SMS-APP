@@ -12,11 +12,19 @@ export const ProjectSchema = z.object({
   zone_cible: z.array(z.string()).optional(),
   periode_date_debut: z.string().min(1, 'Date is required'),
   periode_date_fin: z.string().min(1, 'Date is required'),
-  statut_projet: z.string().min(1, 'Project status is required'),
+  statut_projet: z.string().optional(),
   notes_projet: z.string().optional(),
 });
 
-export type Project = z.infer<typeof ProjectSchema>;
+export type Project = z.infer<typeof ProjectSchema> & {
+  _id: string;
+};
+
+export type ZoneOption = {
+  _id: string;
+  zone_cible: string;
+  sous_Zone_cible: string;
+};
 
 // Mock data for projects
 const mockProjects: Project[] = [
@@ -246,4 +254,3 @@ export async function getProjectsZonesDropdown({
 //     return { data: mockProjects, nextPage: null };
 //   }
 // }
-

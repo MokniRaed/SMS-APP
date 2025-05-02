@@ -1,13 +1,10 @@
 'use client';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { AVAILABLE_PERMISSIONS, createUser, getRoles, UserSchema, type User } from '@/lib/services/users';
+import { createUser, CreateUserSchema, getRoles, type User } from '@/lib/services/users';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -19,28 +16,27 @@ import { toast } from 'sonner';
 export default function NewUserPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // Add state for password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<User>({
-    resolver: zodResolver(UserSchema),
-    defaultValues: {
-      permissions: [],
-      isActive: true,
-      password: '',
-
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<User>({
+    resolver: zodResolver(CreateUserSchema),
   });
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
-    queryFn: getRoles
+    queryFn: getRoles,
   });
-
   console.log("errors", errors);
 
 
 
-  const selectedPermissions = watch('permissions');
+  // const selectedPermissions = watch('permissions');
 
   const onSubmit = async (data: User) => {
     setIsSubmitting(true);
@@ -59,14 +55,14 @@ export default function NewUserPage() {
     }
   };
 
-  const handlePermissionToggle = (permission: string, checked: boolean) => {
-    const currentPermissions = selectedPermissions || [];
-    if (checked) {
-      setValue('permissions', [...currentPermissions, permission]);
-    } else {
-      setValue('permissions', currentPermissions.filter(p => p !== permission));
-    }
-  };
+  // const handlePermissionToggle = (permission: string, checked: boolean) => {
+  //   const currentPermissions = selectedPermissions || [];
+  //   if (checked) {
+  //     setValue('permissions', [...currentPermissions, permission]);
+  //   } else {
+  //     setValue('permissions', currentPermissions.filter(p => p !== permission));
+  //   }
+  // };
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -94,8 +90,9 @@ export default function NewUserPage() {
                 <label className="text-sm font-medium">Password</label>
                 <div className="relative">
                   <Input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     {...register('password')}
+                    required
                     disabled={isSubmitting}
                     className="pr-10"
                   />
@@ -131,7 +128,7 @@ export default function NewUserPage() {
                 {errors.role && <p className="text-sm text-red-500">{errors.role.message}</p>}
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <label className="text-sm font-medium">Status</label>
                 <div className="flex items-center space-x-2">
                   <Switch
@@ -142,9 +139,9 @@ export default function NewUserPage() {
                     {watch('isActive') ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-              </div>
+              </div> */}
 
-              <div className="space-y-4">
+              {/* <div className="space-y-4">
                 <label className="text-sm font-medium">Permissions</label>
                 <Accordion type="multiple">
                   {Object.entries(AVAILABLE_PERMISSIONS).map(([category, permissions]) => (
@@ -178,7 +175,7 @@ export default function NewUserPage() {
                 {errors.permissions && (
                   <p className="text-sm text-red-500">{errors.permissions.message}</p>
                 )}
-              </div>
+              </div> */}
             </div>
 
             <div className="flex justify-end space-x-4">

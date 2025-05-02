@@ -17,6 +17,7 @@ interface MultiSelectPopoverProps {
     onChange: (values: string[]) => void;
     placeholder?: string;
     labelKey1: string;
+    multiple?: boolean;
     labelKey2: string;
     onScrollBottom?: () => void;
     isFetchingMore?: boolean;
@@ -24,7 +25,6 @@ interface MultiSelectPopoverProps {
     searchTerm: string;
     onSearchChange: (value: string) => void;
 }
-
 
 export default function MultiSelectPopover({
     options,
@@ -39,6 +39,7 @@ export default function MultiSelectPopover({
     isLoading,
     searchTerm,
     onSearchChange,
+    multiple = true, // Default to multiple selection
 }: MultiSelectPopoverProps) {
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -64,9 +65,14 @@ export default function MultiSelectPopover({
         return items.join(", ");
     };
     const toggleSelect = (id: string) => {
-        const updated = selectedValues.includes(id)
-            ? selectedValues.filter((val) => val !== id)
-            : [...selectedValues, id];
+        let updated: string[];
+        if (multiple) {
+            updated = selectedValues.includes(id)
+                ? selectedValues.filter((val) => val !== id)
+                : [...selectedValues, id];
+        } else {
+            updated = [id];
+        }
         onChange(updated);
     };
 
@@ -108,6 +114,7 @@ export default function MultiSelectPopover({
                                     >
                                         <Checkbox
                                             checked={selectedValues.includes(option?._id)}
+                                            disabled={!multiple && selectedValues.length > 0 && !selectedValues.includes(option._id)}
                                         />
                                         <span>
                                             {option[labelKey1]} - {option[labelKey2]}

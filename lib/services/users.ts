@@ -4,20 +4,31 @@ import api from '@/lib/axios';
 import { AxiosResponse } from 'axios';
 import { z } from 'zod';
 
-export const UserSchema = z.object({
+// ✅ Base schema with shared fields
+const BaseUserSchema = z.object({
   id: z.string().optional(),
   username: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Invalid password, 8 caractére at least'),
   role: z.string(),
-  permissions: z.array(z.string()),
-  isActive: z.boolean(),
   lastLogin: z.string().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
 
-export type User = z.infer<typeof UserSchema>;
+// ✅ Create schema (password required)
+export const CreateUserSchema = BaseUserSchema.extend({
+  password: z.string().min(8, 'Invalid password, 8 characters at least'),
+});
+
+// ✅ Update schema (password optional)
+export const UpdateUserSchema = BaseUserSchema.extend({
+  password: z.string().min(8).optional(),
+});
+
+// Types
+export type User = z.infer<typeof BaseUserSchema>;
+export type CreateUser = z.infer<typeof CreateUserSchema>;
+export type UpdateUser = z.infer<typeof UpdateUserSchema>;
 
 // Mock data for users
 const mockUsers: User[] = [
@@ -32,60 +43,17 @@ const mockUsers: User[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-03-25T10:30:00Z'
   },
-  {
-    id: '2',
-    username: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    role: 'MANAGER',
-    permissions: ['projects.view', 'projects.create', 'tasks.all'],
-    isActive: true,
-    lastLogin: '2024-03-24T15:45:00Z',
-    createdAt: '2024-01-15T00:00:00Z',
-    updatedAt: '2024-03-24T15:45:00Z'
-  },
-  {
-    id: '3',
-    username: 'Mike Johnson',
-    email: 'mike.johnson@example.com',
-    role: 'USER',
-    permissions: ['tasks.view', 'tasks.create'],
-    isActive: true,
-    lastLogin: '2024-03-23T09:15:00Z',
-    createdAt: '2024-02-01T00:00:00Z',
-    updatedAt: '2024-03-23T09:15:00Z'
-  },
-  {
-    id: '4',
-    username: 'Sarah Wilson',
-    email: 'sarah.wilson@example.com',
-    role: 'MANAGER',
-    permissions: ['projects.all', 'tasks.all'],
-    isActive: false,
-    lastLogin: '2024-03-20T14:20:00Z',
-    createdAt: '2024-02-15T00:00:00Z',
-    updatedAt: '2024-03-20T14:20:00Z'
-  },
-  {
-    id: '5',
-    username: 'David Brown',
-    email: 'david.brown@example.com',
-    role: 'USER',
-    permissions: ['tasks.view'],
-    isActive: true,
-    lastLogin: '2024-03-25T08:00:00Z',
-    createdAt: '2024-03-01T00:00:00Z',
-    updatedAt: '2024-03-25T08:00:00Z'
-  }
+
 ];
 
-export const AVAILABLE_PERMISSIONS = {
-  users: ['users.view', 'users.create', 'users.edit', 'users.delete', 'users.all'],
-  projects: ['projects.view', 'projects.create', 'projects.edit', 'projects.delete', 'projects.all'],
-  tasks: ['tasks.view', 'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.all'],
-  clients: ['clients.view', 'clients.create', 'clients.edit', 'clients.delete', 'clients.all'],
-  reports: ['reports.view', 'reports.create', 'reports.export', 'reports.all'],
-  settings: ['settings.view', 'settings.edit', 'settings.all']
-} as const;
+// export const AVAILABLE_PERMISSIONS = {
+//   users: ['users.view', 'users.create', 'users.edit', 'users.delete', 'users.all'],
+//   projects: ['projects.view', 'projects.create', 'projects.edit', 'projects.delete', 'projects.all'],
+//   tasks: ['tasks.view', 'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.all'],
+//   clients: ['clients.view', 'clients.create', 'clients.edit', 'clients.delete', 'clients.all'],
+//   reports: ['reports.view', 'reports.create', 'reports.export', 'reports.all'],
+//   settings: ['settings.view', 'settings.edit', 'settings.all']
+// } as const;
 
 export async function getUsers(page: string = '1', limit: string = '10'): Promise<any> {
   try {
